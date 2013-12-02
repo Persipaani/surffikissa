@@ -24,6 +24,7 @@ SpriteFromSheet=function(spritesheet, cells){
 }
 
 SpriteFromSheet.prototype={
+	
 	NextCell:function(){
 		if(this.cell_index==this.cells.length-1){
 			this.cell_index=0;

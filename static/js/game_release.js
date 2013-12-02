@@ -1,5 +1,3 @@
-//Sampo's cat game
-
 //Game-object:
 var Game=function(){
 	//elements:
@@ -7,21 +5,16 @@ var Game=function(){
 	this.context = this.canvas.getContext("2d"),
 	this.msg = document.getElementById("msg"),
 
+	//Pelikentän rajat:
+	this.x_limit=700,
+	this.y_limit=330,
 	
-	//general:
-	this.platform_height=3,
-	this.platform_width=2,
-	this.colorstyle="rgb(0,0,0)",
-	//Alin mahdollinen:400 Ylin mahdollinen:0 
-	this.height1=360,
-	this.height2=225,
-	this.height3=85,
-	
-	this.scroll_speed=42,
+	this.animation_fps=5
 	this.current_track=2,
-	this.sprite_speed=0,
-	this.background_speed=0,
+	this.background_speed=30,
+	this.sprite_speed=this.background_speed*2.32, //4.32 originaali
 	this.player_acc=0.0,
+	this.player_vert_acc=0.0,
 	
 	//offsets:
 	this.background_offset=0,
@@ -42,6 +35,8 @@ var Game=function(){
 	//other:
 	this.right_up=true,
 	this.left_up=true,
+	this.up_up=true,
+	this.down_up=true,
 	this.breath=40.0,
 	this.completion=0.0,
 	this.partial_completion=0,
@@ -53,12 +48,16 @@ var Game=function(){
 	this.won=false;
 	
 	//Sprite locations:
-	//Tässä vaiheessa vasta 1 cell kaikkia, koska ei animointia!
-	this.playercells=[{x:0,y:0,width:50,height:45}],
-	this.dogcells=[{x:0,y:50,width:45,height:50}],
-	this.dogdata=[{x:1200,y:this.height2},{x:1300,y:this.height3},{x:1500,y:this.height2},{x:1700,y:this.height3},
-	{x:1750,y:this.height3},{x:1200,y:this.height3},{x:1900,y:this.height2},{x:2000,y:this.height3}]; //{x:800,y:205},
-	this.dogs=[];
+	
+	//Celleissä x ja y meinaa koordinaatteja sheetissä (vasempaan yläkulmaan):
+	this.playercells_right=[{x:0,y:5,width:50,height:45},{x:50,y:5,width:45,height:43},{x:100,y:5,width:48,height:43}],
+	this.playercells_still=[{x:0,y:83,width:50,height:45},{x:54,y:83,width:45,height:43},{x:107,y:83,width:48,height:43}],
+	this.rockcells=[{x:5,y:50,width:35,height:25},{x:53,y:50,width:35,height:25},{x:101,y:50,width:35,height:25}],
+	//Tämä on sijaintidataa pelikentällä:
+	this.rockdata=[{x:1200,y:200},{x:1300,y:400},{x:1500,y:200},{x:1700,y:400},
+	{x:1750,y:400},{x:1200,y:200},{x:1900,y:300},{x:2000,y:320}];
+	
+	this.rocks=[];
 	this.sprites=[]; //All sprites!
 	
 	//Sprite actions:
@@ -125,14 +124,47 @@ var Game=function(){
 			game.CollideEffect(sprite,colliding);
 		}
 	},
+	
+	this.MoveAction={
+		previous:0,
+		Execute: function(sprite,context,time,fps){
+			if(sprite.animation_fps==0){
+				return;
+			}
+			if(this.previous==0){
+				this.previous=time;
+			}
+			else if(time-this.previous>1000/sprite.animation_fps){
+				sprite.mode.NextCell()
+				this.previous=time;
+			}
+		}
+	},
+	
+	this.SplashAction={
+		previous:0,
+		Execute: function(sprite,context,time,fps){
+			if(sprite.animation_fps==0){
+				return;
+			}
+			if(this.previous==0){
+				this.previous=time;
+			}
+			else if(time-this.previous>1000/sprite.animation_fps){
+				sprite.mode.NextCell()
+				this.previous=time;
+			}
+		}
+	},
+	
 	//Create player Sprite:
-	this.playerspriter=new SpriteFromSheet(this.spritesheet,this.playercells),
+	this.playerspriter=new SpriteFromSheet(this.spritesheet,this.playercells_right),
 	//Create Sprites:
-	this.player=new Sprite("player",this.playerspriter,[this.CollisionAction]);
+	this.player=new Sprite("player",this.playerspriter,[this.CollisionAction,this.MoveAction]);
 	this.sprites.push(this.player),
 	
 	//Dummy ei animoi, palauttaa vain falseksi:
-	this.CollisionAnimator=new SpriteAnimator(this.playercells,this.collision_duration,
+	this.CollisionAnimator=new SpriteAnimator(this.playercells_right,this.collision_duration,
 	//This happens after collision animation:
 		function(sprite,animator){
 			sprite.collided=false;
@@ -146,14 +178,14 @@ var Game=function(){
 Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 //CALCULATIONS AND INITIALIZING:
 	Run:function(){
-		this.background_speed=this.scroll_speed;
+		this.player.animation_fps=this.animation_fps;
 		requestNextAnimationFrame(game.CalculateAnimation);
 	},
 	
 	Initialize:function(){
 		this.GenerateSprites();
 		this.SetOffSets();
-		this.background.src = "static/img/background_level_one_dark_red.png";
+		this.background.src = "static/img/sea_background.png";
 		this.spritesheet.src = "static/img/spritesheet.png";
 		//kun tausta on ladattu niin peli voi alkaa:
 		this.background.onload=function(e){
@@ -162,8 +194,8 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 	},
 
 	GenerateSprites:function(){
-		this.CreateDogs();
-		this.PositionSprites(this.dogs,this.dogdata);
+		this.CreateRocks();
+		this.PositionSprites(this.rocks,this.rockdata);
 	},
 	
 	PositionSprites:function(sprites,spritedata){
@@ -175,34 +207,20 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		}
 	},
 	
-	CreateDogs:function(){
-		var doggy;
-		var dogspriter=new SpriteFromSheet(this.spritesheet,this.dogcells);
-		for(var n=0;n<this.dogdata.length;++n){
-			doggy=new Sprite("dog",dogspriter);
-			doggy.collided=false;
-			doggy.width=50;
-			doggy.height=50;
-			doggy.x=0;
-			doggy.y=0;
-			this.dogs.push(doggy);
-			this.sprites.push(doggy);
+	CreateRocks:function(){
+		var rock;
+		var rockspriter=new SpriteFromSheet(this.spritesheet,this.rockcells);
+		for(var n=0;n<this.rockdata.length;++n){
+			rock=new Sprite("rock",rockspriter,[this.SplashAction]);
+			rock.collided=false;
+			rock.width=35;
+			rock.height=25;
+			rock.x=0;
+			rock.y=0;
+			rock.animation_fps=this.animation_fps;
+			this.rocks.push(rock);
+			this.sprites.push(rock);
 		}
-	},
-	
-	
-	CalculateY:function(tracknumber) {
-		var height;
-		if(tracknumber==1){
-			height=this.height1;
-		}
-		else if(tracknumber==2){
-			height=this.height2; 
-		}
-		else if(tracknumber==3){
-			height=this.height3;
-		}
-		return height;
 	},
 	
 	CalculateBackground:function(){
@@ -224,7 +242,6 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 	},
 	
 	CalculateSprites:function(){
-		this.sprite_speed=this.background_speed*4.32;
 		var sprite;
 		
 		for(var n=0;n<this.sprites.length;++n){
@@ -265,9 +282,9 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		game.completion=0.0;
 		game.partial_completion=0;
 		game.sprites=[];
-		game.dogs=[];
-		game.playerspriter=new SpriteFromSheet(game.spritesheet,game.playercells);
-		game.player=new Sprite("player",game.playerspriter,[game.CollisionAction]);
+		game.rocks=[];
+		game.playerspriter=new SpriteFromSheet(game.spritesheet,game.playercells_right);
+		game.player=new Sprite("player",game.playerspriter,[game.CollisionAction, game.MoveAction]);
 		game.sprites.push(game.player);
 		game.GenerateSprites();
 		game.SetOffSets();
@@ -350,49 +367,86 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 	
 	CalculatePlayer:function(){
 		//Calculate track, level of breath and acceleration of player(Sprite):
-		this.player.y=this.CalculateY(this.current_track);
-		
+		this.player.y=this.player.y+this.player_vert_acc;
 		this.player.x=this.player.x+this.player_acc;
-		if(this.player.x<50){
-			this.player.x=50
+		
+		//Animoidaan eri tavalla liikkeessä:
+		if(this.player_acc!=0.0 || this.player_vert_acc!=0.0){
+			this.playerspriter.cells=this.playercells_right;
 		}
-		if(this.player.x>700){
-			this.player.x=700
+		else{
+			this.playerspriter.cells=this.playercells_still;
 		}
 		
-		if(this.current_track==1 && this.breath>=0){
-			this.breath-=0.5;
+		if(this.player.x<50){
+			this.player.x=50;
 		}
-		else if(this.current_track==2 && this.breath<100){
-			this.breath+=0.1;	
+		if(this.player.x>this.x_limit){
+			this.player.x=this.x_limit;
 		}
-		else if(this.current_track==3 && this.breath<100){
+		
+		if(this.player.y<10){
+			this.player.y=10;
+		}
+		if(this.player.y>this.y_limit){
+			this.player.y=this.y_limit;
+		}
+		
+		if(this.player.y>400){
+			this.breath-=0.5;	
+		}
+		else if(this.player.y<100 && this.breath<100.0){
 			this.breath+=0.5;
 		}
-		
+		if(this.breath>100.0){
+			this.breath=100.0;
+		}
+
 		if(this.player_acc<0.0 && this.left_up==true){
-			this.player_acc+=1.0;
+			this.player_acc+=0.2;
 		}
 		if(this.player_acc>0.0 && this.right_up==true){
-			this.player_acc-=1.0;
+			this.player_acc-=0.2;
 		}
+		if(this.player_vert_acc<0.0 && this.up_up==true){
+			this.player_vert_acc+=0.2;
+		}
+		if(this.player_vert_acc>0.0 && this.down_up==true){
+			this.player_vert_acc-=0.2;
+		}
+		
+		//Kiihtyvyys resetoidaan lähellä nollaa:
+		if(this.right_up==true && this.player_acc>-0.2 && this.player_acc<0.2){
+			this.player_acc=0.0;
+		}
+		if(this.left_up==true && this.player_acc>-0.2 && this.player_acc<0.2){
+			this.player_acc=0.0;
+		}
+		if(this.up_up==true && this.player_vert_acc>-0.2 && this.player_vert_acc<0.2){
+			this.player_vert_acc=0.0;
+		}
+		if(this.down_up==true && this.player_vert_acc>-0.2 && this.player_vert_acc<0.2){
+			this.player_vert_acc=0.0;
+		}
+		
+		DEBUG.innerHTML="acc:"+this.player_acc + " vert_acc: "+this.player_vert_acc;
 	},
 	
 	RemoveSprite:function(sprite){
 		//Nyt toimii vasta koirilla:
 		var index1=this.sprites.indexOf(sprite);
-		var index2=this.dogs.indexOf(sprite);
+		var index2=this.rocks.indexOf(sprite);
 		this.sprites.splice(index1,1);
-		this.dogs.splice(index2,1);	
+		this.rocks.splice(index2,1);	
 	},
 	
 	RemoveEnemiesFrom:function(x,y){
 		var x=x-this.canvas.getBoundingClientRect().left;
 		var y=y-this.canvas.getBoundingClientRect().top;
 		var sprite,sprite_x;
-		if(this.dogs.length!=0){
-				for(var n=0;n<this.dogs.length;++n){
-					sprite=this.dogs[n];
+		if(this.rocks.length!=0){
+				for(var n=0;n<this.rocks.length;++n){
+					sprite=this.rocks[n];
 					sprite_x=sprite.x-sprite.offset
 					//koordinaattien täytyy olla sinnetänne oikein:
 					if(y>=sprite.y-40 && y<=sprite.y+40){
@@ -510,11 +564,17 @@ window.onmousedown=function(e){
 window.onkeyup=function(e){
 	//checks if key that was pressed down is up again.
 	var keycode=e.keyCode;
+	if(keycode==37 && game.paused==false){
+		game.left_up=true;
+	}
+	if(keycode==38 && game.paused==false){
+		game.up_up=true;
+	}
 	if(keycode==39 && game.paused==false){
 		game.right_up=true;
 	}
-	if(keycode==37 && game.paused==false){
-		game.left_up=true;
+	if(keycode==40 && game.paused==false){
+		game.down_up=true;
 	}
 		
 }
@@ -538,19 +598,17 @@ window.onkeydown=function(e){
 		this.keypaused=!this.keypaused;
 		game.TogglePause();
 	}
-	//up arrow jumps:
-	if(keycode==38 && game.paused==false){
+	//up arrow moves up:
+	if(keycode==38 && game.paused==false && game.player.y>10.0){
 		e.preventDefault();
-		if(game.current_track!=3){
-			game.current_track++;
-		}
+		game.player_vert_acc=-5.0;
+		game.up_up=false;
 	}
-	//down arrow drops:
-	if(keycode==40 && game.paused==false){
+	//down arrow moves down:
+	if(keycode==40 && game.paused==false && game.player.y<400.0){
 		e.preventDefault();
-		if(game.current_track!=1){
-			game.current_track--;
-		}
+		game.player_vert_acc=5.0;
+		game.down_up=false;
 	}
 	//Right arrow advances right:
 	if(keycode==39 && game.paused==false && game.player.x<800.0){

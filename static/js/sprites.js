@@ -2,20 +2,6 @@
 // Artists draw sprites with a draw(sprite, context) method. ImageArtists
 // draw an image for their sprite.
 
-var SpriteFromImg = function(imagepath){
-	this.image=new Image();
-	this.image.src=imagepath;
-}
-
-SpriteFromImg.prototype={
-	image: undefined, drawSpriteImage:function(sprite,context) {
-		context.drawImage(this.image, sprite.x, sprite.y);
-	},
-	
-	Draw:function(sprite,context){
-		this.drawSpriteImage(sprite, context);   
-	}
-}
 
 SpriteFromSheet=function(spritesheet, cells){
 	this.cells=cells;

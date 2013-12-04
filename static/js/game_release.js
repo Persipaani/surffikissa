@@ -20,6 +20,8 @@ var Game=function(){
 	this.background_offset=0,
 	
 	//timing:
+	this.JUMPTIME=1000; //ms
+	this.jumpstart=0;
 	this.prev_time=0,
 	this.prev_update=0,
 	this.fps=60,
@@ -33,6 +35,9 @@ var Game=function(){
 	this.spritesheet = new Image(),
 	
 	//other:
+	this.stopped=false;
+	this.CHANGE=5.0;
+	this.player_jumping=false;
 	this.right_up=true,
 	this.left_up=true,
 	this.up_up=true,
@@ -77,7 +82,7 @@ var Game=function(){
 	
 		PossibleCollision:function(sprite,colliding){
 			//Kummankin pitää olla näkyvillä ja ei saa olla sama:
-			if(sprite!=colliding && sprite.visible && colliding.visible){
+			if(sprite!=colliding && sprite.visible && colliding.visible && game.player_jumping==false){
 				//Kummassakaan ei saa olla törmäys käynnissä:
 				if(!sprite.collided && !colliding.collided){
 					//Tarkistuksen tehostamiseksi käydään läpi vain objektit pelaajan kohdalla:
@@ -365,17 +370,45 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		sprite.offset=0;
 	},
 	
-	CalculatePlayer:function(){
+	CalculatePlayer:function(time){
+		
+		if(this.jumpstart==0 && game.player_jumping==true){
+			this.jumpstart=time;
+		}
+		else if(time-this.jumpstart<this.JUMPTIME && game.player_jumping==true){
+				if(this.player_acc<0.0){
+				this.player_acc+=0.05;
+				}
+				if(this.player_acc>0.0){
+					this.player_acc-=0.05;
+				}
+				if(this.player_vert_acc<0.0){
+					this.player_vert_acc+=0.05;
+				}
+				if(this.player_vert_acc>0.0){
+					this.player_vert_acc-=0.05;
+				}
+		}
+		else if(time-this.jumpstart>this.JUMPTIME && game.player_jumping==true){
+			game.player_jumping=false;
+			this.jumpstart=0;
+		}
+		
 		//Calculate track, level of breath and acceleration of player(Sprite):
 		this.player.y=this.player.y+this.player_vert_acc;
 		this.player.x=this.player.x+this.player_acc;
 		
 		//Animoidaan eri tavalla liikkeessä:
-		if(this.player_acc!=0.0 || this.player_vert_acc!=0.0){
-			this.playerspriter.cells=this.playercells_right;
+		if(game.player_jumping==true){
+			this.playerspriter.cells=this.rockcells;
 		}
 		else{
-			this.playerspriter.cells=this.playercells_still;
+			if(this.player_acc!=0.0 || this.player_vert_acc!=0.0){
+				this.playerspriter.cells=this.playercells_right;
+			}
+			else{
+				this.playerspriter.cells=this.playercells_still;
+			}
 		}
 		
 		if(this.player.x<50){
@@ -415,6 +448,7 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 			this.player_vert_acc-=0.2;
 		}
 		
+		
 		//Kiihtyvyys resetoidaan lähellä nollaa:
 		if(this.right_up==true && this.player_acc>-0.2 && this.player_acc<0.2){
 			this.player_acc=0.0;
@@ -429,7 +463,7 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 			this.player_vert_acc=0.0;
 		}
 		
-		DEBUG.innerHTML="acc:"+this.player_acc + " vert_acc: "+this.player_vert_acc;
+		DEBUG.innerHTML="vert_acc: "+this.player_vert_acc + "acc: "+this.player_acc;
 	},
 	
 	RemoveSprite:function(sprite){
@@ -461,7 +495,7 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 //DRAWING:
 	Draw:function(time){
 		//Calculations:
-		this.CalculatePlayer();
+		this.CalculatePlayer(time);
 		this.CalculateBackground();
 		this.CalculateSprites();
 		
@@ -601,25 +635,29 @@ window.onkeydown=function(e){
 	//up arrow moves up:
 	if(keycode==38 && game.paused==false && game.player.y>10.0){
 		e.preventDefault();
-		game.player_vert_acc=-5.0;
+		game.player_vert_acc=-game.CHANGE;
 		game.up_up=false;
 	}
 	//down arrow moves down:
 	if(keycode==40 && game.paused==false && game.player.y<400.0){
 		e.preventDefault();
-		game.player_vert_acc=5.0;
+		game.player_vert_acc=game.CHANGE;
 		game.down_up=false;
 	}
 	//Right arrow advances right:
 	if(keycode==39 && game.paused==false && game.player.x<800.0){
-		game.player_acc=5.0;
+		game.player_acc=game.CHANGE;
 		game.right_up=false;
 	}
 	//Left arrow advances left:
 	if(keycode==37 && game.paused==false && game.player.x>50.0){
-		game.player_acc=-5.0;
+		game.player_acc=-game.CHANGE;
 		game.left_up=false;
 	}
+	if(keycode==32 && game.player_jumping==false){
+		game.player_jumping=true;
+	}
+
 }
 
 //WINDOW FOCUS HANDLING:

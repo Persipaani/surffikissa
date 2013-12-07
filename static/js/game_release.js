@@ -5,12 +5,11 @@ var Game=function(){
 	this.context = this.canvas.getContext("2d"),
 	this.msg = document.getElementById("msg"),
 
-	//Pelikentän rajat:
-	this.x_limit=700,
-	this.y_limit=330,
+	//Game Area:
+	this.X_LIMIT=750,
+	this.Y_LIMIT=350,
 	
 	this.animation_fps=5
-	this.current_track=2,
 	this.background_speed=30,
 	this.sprite_speed=this.background_speed*2.32, //4.32 originaali
 	this.player_acc=0.0,
@@ -21,13 +20,14 @@ var Game=function(){
 	
 	//timing:
 	this.JUMPTIME=1000; //ms
-	this.jumpstart=0;
-	this.prev_time=0,
-	this.prev_update=0,
+	this.COLLISION_DURATION=2000; //ms
+	this.jumpstart=0;	//Jumping started at this time
+	this.prev_time=0,	//for FPS
+	this.prev_update=0, //for FPS
 	this.fps=60,
 	this.paused=false,
-	this.pause_start=0,
-	this.pausetimer=200,
+	this.pause_start=0, //Time when game was paused
+	this.pausetimer=200, //How often game checks if it's unpaused
 	this.window_active=true,
 	
 	//items:
@@ -35,29 +35,30 @@ var Game=function(){
 	this.spritesheet = new Image(),
 	
 	//other:
-	this.stopped=false;
-	this.CHANGE=3.0;
-	this.player_jumping=false;
-	this.right_up=true,
-	this.left_up=true,
-	this.up_up=true,
-	this.down_up=true,
+	this.CHANGE=3.0, //Speed of the player movement
+	this.player_jumping=false,
+	this.player_colliding=false,
+	this.right_up=true, //for keys
+	this.left_up=true,	//for keys
+	this.up_up=true,	//for keys
+	this.down_up=true,	//for keys
 	this.breath=40.0,
 	this.completion=0.0,
 	this.partial_completion=0,
 	this.breath_bar_color="rgb(0,25,200)",
 	this.completion_bar_color="rgb(200,25,0)",
-	this.keypaused=false,
-	this.collision_duration=1000;
+	this.keypaused=false, //tells if game was paused by pressing p
 	this.lost=false;
 	this.won=false;
 	
 	//Sprite locations:
 	
 	//Celleissä x ja y meinaa koordinaatteja sheetissä (vasempaan yläkulmaan):
+	// HUOM!!! CELLEJÄ TULEE AINA OLLA YHTÄ MONTA JOKAISELLE ACTIONILLE, MUUTEN KUSEE!
 	this.playercells_right=[{x:0,y:5,width:50,height:45},{x:50,y:5,width:45,height:43},{x:100,y:5,width:48,height:43}],
 	this.playercells_still=[{x:0,y:83,width:50,height:35},{x:54,y:83,width:45,height:35},{x:107,y:83,width:48,height:35}],
 	this.playercells_jumping=[{x:0,y:120,width:45,height:45},{x:57,y:120,width:45,height:45},{x:109,y:120,width:45,height:45}],
+	this.playercells_colliding=[{x:6,y:168,width:45,height:35},{x:62,y:168,width:45,height:35},{x:168,y:120,width:45,height:35}],
 	this.rockcells=[{x:5,y:50,width:35,height:25},{x:53,y:50,width:35,height:25},{x:101,y:50,width:35,height:25}],
 	//Tämä on sijaintidataa pelikentällä:
 	this.rockdata=[{x:1200,y:200},{x:1300,y:400},{x:1500,y:200},{x:1700,y:400},
@@ -167,18 +168,7 @@ var Game=function(){
 	this.playerspriter=new SpriteFromSheet(this.spritesheet,this.playercells_right),
 	//Create Sprites:
 	this.player=new Sprite("player",this.playerspriter,[this.CollisionAction,this.MoveAction]);
-	this.sprites.push(this.player),
-	
-	//Dummy ei animoi, palauttaa vain falseksi:
-	this.CollisionAnimator=new SpriteAnimator(this.playercells_right,this.collision_duration,
-	//This happens after collision animation:
-		function(sprite,animator){
-			sprite.collided=false;
-			sprite.visible=true;
-			this.current_track=1;
-			sprite.mode.cell_index=0;
-		}
-	);
+	this.sprites.push(this.player);
 }
 
 Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
@@ -417,10 +407,14 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		this.player.x=this.player.x+this.player_acc;
 		
 		//Animoidaan eri tavalla liikkeessä:
+		
 		if(game.player_jumping==true){
 			this.playerspriter.cells=this.playercells_jumping;
 		}
-		else{
+		else if(game.player_colliding==true){
+			this.playerspriter.cells=this.playercells_colliding;	
+		}
+		else if(game.player_colliding!=true){
 			if(this.player_acc!=0.0 || this.player_vert_acc!=0.0){
 				this.playerspriter.cells=this.playercells_right;
 			}
@@ -432,15 +426,15 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		if(this.player.x<50){
 			this.player.x=50;
 		}
-		if(this.player.x>this.x_limit){
-			this.player.x=this.x_limit;
+		if(this.player.x>this.X_LIMIT){
+			this.player.x=this.X_LIMIT;
 		}
 		
 		if(this.player.y<10){
 			this.player.y=10;
 		}
-		if(this.player.y>this.y_limit){
-			this.player.y=this.y_limit;
+		if(this.player.y>this.Y_LIMIT){
+			this.player.y=this.Y_LIMIT;
 		}
 		
 		if(this.player.y>400){
@@ -481,7 +475,6 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 			this.player_vert_acc=0.0;
 		}
 		
-		DEBUG.innerHTML="vert_acc: "+this.player_vert_acc + "acc: "+this.player_acc;
 	},
 	
 	RemoveSprite:function(sprite){
@@ -578,11 +571,17 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 			this.breath=0;
 		}
 		colliding.collided=true;
-		//true=sprite tulee takaisin:
+		game.player_colliding=true;
 		
-		this.CollisionAnimator.Start(sprite,true);
-		//Vihollinen palaa taaksepäin vain jonkin aikaa:
-		setTimeout(function(){colliding.collided=false},2000);
+		//Törmäyksen jälkeen:
+		setTimeout(function(){
+			colliding.collided=false;
+			game.player_colliding=false;
+			DEBUG.innerHTML="collision over!";
+			sprite.collided=false;
+			sprite.visible=true;
+			sprite.mode.cell_index=0;
+			},game.COLLISION_DURATION);
 	},
 	
 	DrawSprites:function(){
@@ -651,35 +650,42 @@ window.onkeydown=function(e){
 		game.TogglePause();
 	}
 	//Can't move during jump!
-	if(game.player_jumping==false){
 		//up arrow moves up:
 		if(keycode==38 && game.paused==false && game.player.y>10.0){
 			e.preventDefault();
-			game.player_vert_acc=-game.CHANGE;
+			if(game.player_jumping==false){
+				game.player_vert_acc=-game.CHANGE;
+			}
 			game.up_up=false;
 		}
 		//down arrow moves down:
 		if(keycode==40 && game.paused==false && game.player.y<400.0){
 			e.preventDefault();
-			game.player_vert_acc=game.CHANGE;
+			if(game.player_jumping==false){
+				game.player_vert_acc=game.CHANGE;
+			}
 			game.down_up=false;
 		}
 		//Right arrow advances right:
 		if(keycode==39 && game.paused==false && game.player.x<800.0){
-			game.player_acc=game.CHANGE;
+			if(game.player_jumping==false){
+				game.player_acc=game.CHANGE;
+			}
 			game.right_up=false;
 		}
 		//Left arrow advances left:
 		if(keycode==37 && game.paused==false && game.player.x>50.0){
-			game.player_acc=-game.CHANGE;
+			if(game.player_jumping==false){
+				game.player_acc=-game.CHANGE;
+			}
 			game.left_up=false;
 		}
-		if(keycode==32){
+		if(keycode==32 && game.player_jumping==false && game.player_colliding==false){
 			game.player_jumping=true;
 		}
 	}
 
-}
+
 
 //WINDOW FOCUS HANDLING:
 window.onblur=function(){

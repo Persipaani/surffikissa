@@ -51,7 +51,7 @@ SpriteAnimator.prototype={
 			if(self.after){
 				self.after(sprite, self);
 			}
-		},self.duration); 
+		},self.duration);
 	},
 };
 

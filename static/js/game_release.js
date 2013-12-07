@@ -36,7 +36,7 @@ var Game=function(){
 	
 	//other:
 	this.stopped=false;
-	this.CHANGE=5.0;
+	this.CHANGE=3.0;
 	this.player_jumping=false;
 	this.right_up=true,
 	this.left_up=true,
@@ -56,7 +56,8 @@ var Game=function(){
 	
 	//Celleissä x ja y meinaa koordinaatteja sheetissä (vasempaan yläkulmaan):
 	this.playercells_right=[{x:0,y:5,width:50,height:45},{x:50,y:5,width:45,height:43},{x:100,y:5,width:48,height:43}],
-	this.playercells_still=[{x:0,y:83,width:50,height:45},{x:54,y:83,width:45,height:43},{x:107,y:83,width:48,height:43}],
+	this.playercells_still=[{x:0,y:83,width:50,height:35},{x:54,y:83,width:45,height:35},{x:107,y:83,width:48,height:35}],
+	this.playercells_jumping=[{x:0,y:120,width:45,height:45},{x:57,y:120,width:45,height:45},{x:109,y:120,width:45,height:45}],
 	this.rockcells=[{x:5,y:50,width:35,height:25},{x:53,y:50,width:35,height:25},{x:101,y:50,width:35,height:25}],
 	//Tämä on sijaintidataa pelikentällä:
 	this.rockdata=[{x:1200,y:200},{x:1300,y:400},{x:1500,y:200},{x:1700,y:400},
@@ -224,7 +225,7 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 			rock.y=0;
 			rock.animation_fps=this.animation_fps;
 			this.rocks.push(rock);
-			this.sprites.push(rock);
+			this.sprites.splice(0,0,rock);
 		}
 	},
 	
@@ -371,10 +372,12 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 	},
 	
 	CalculatePlayer:function(time){
-		
+		//Jumping starts:
 		if(this.jumpstart==0 && game.player_jumping==true){
+			this.player.y-=10;
 			this.jumpstart=time;
 		}
+		//Jumping on:
 		else if(time-this.jumpstart<this.JUMPTIME && game.player_jumping==true){
 				if(this.player_acc<0.0){
 				this.player_acc+=0.05;
@@ -389,9 +392,24 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 					this.player_vert_acc-=0.05;
 				}
 		}
+		//Jumping ends:
 		else if(time-this.jumpstart>this.JUMPTIME && game.player_jumping==true){
+			this.player.y+=10;
 			game.player_jumping=false;
 			this.jumpstart=0;
+			//Restore movement before jump:
+			if(this.left_up==false){
+				this.player_acc=-3.0;
+			}
+			if(this.right_up==false){
+				this.player_acc=3.0;
+			}
+			if(this.up_up==false){
+				this.player_vert_acc=-3.0;
+			}
+			if(this.down_up==false){
+				this.player_vert_acc=3.0;
+			}
 		}
 		
 		//Calculate track, level of breath and acceleration of player(Sprite):
@@ -400,7 +418,7 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		
 		//Animoidaan eri tavalla liikkeessä:
 		if(game.player_jumping==true){
-			this.playerspriter.cells=this.rockcells;
+			this.playerspriter.cells=this.playercells_jumping;
 		}
 		else{
 			if(this.player_acc!=0.0 || this.player_vert_acc!=0.0){
@@ -436,16 +454,16 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		}
 
 		if(this.player_acc<0.0 && this.left_up==true){
-			this.player_acc+=0.2;
+			this.player_acc+=0.3;
 		}
 		if(this.player_acc>0.0 && this.right_up==true){
-			this.player_acc-=0.2;
+			this.player_acc-=0.3;
 		}
 		if(this.player_vert_acc<0.0 && this.up_up==true){
-			this.player_vert_acc+=0.2;
+			this.player_vert_acc+=0.3;
 		}
 		if(this.player_vert_acc>0.0 && this.down_up==true){
-			this.player_vert_acc-=0.2;
+			this.player_vert_acc-=0.3;
 		}
 		
 		
@@ -632,30 +650,33 @@ window.onkeydown=function(e){
 		this.keypaused=!this.keypaused;
 		game.TogglePause();
 	}
-	//up arrow moves up:
-	if(keycode==38 && game.paused==false && game.player.y>10.0){
-		e.preventDefault();
-		game.player_vert_acc=-game.CHANGE;
-		game.up_up=false;
-	}
-	//down arrow moves down:
-	if(keycode==40 && game.paused==false && game.player.y<400.0){
-		e.preventDefault();
-		game.player_vert_acc=game.CHANGE;
-		game.down_up=false;
-	}
-	//Right arrow advances right:
-	if(keycode==39 && game.paused==false && game.player.x<800.0){
-		game.player_acc=game.CHANGE;
-		game.right_up=false;
-	}
-	//Left arrow advances left:
-	if(keycode==37 && game.paused==false && game.player.x>50.0){
-		game.player_acc=-game.CHANGE;
-		game.left_up=false;
-	}
-	if(keycode==32 && game.player_jumping==false){
-		game.player_jumping=true;
+	//Can't move during jump!
+	if(game.player_jumping==false){
+		//up arrow moves up:
+		if(keycode==38 && game.paused==false && game.player.y>10.0){
+			e.preventDefault();
+			game.player_vert_acc=-game.CHANGE;
+			game.up_up=false;
+		}
+		//down arrow moves down:
+		if(keycode==40 && game.paused==false && game.player.y<400.0){
+			e.preventDefault();
+			game.player_vert_acc=game.CHANGE;
+			game.down_up=false;
+		}
+		//Right arrow advances right:
+		if(keycode==39 && game.paused==false && game.player.x<800.0){
+			game.player_acc=game.CHANGE;
+			game.right_up=false;
+		}
+		//Left arrow advances left:
+		if(keycode==37 && game.paused==false && game.player.x>50.0){
+			game.player_acc=-game.CHANGE;
+			game.left_up=false;
+		}
+		if(keycode==32){
+			game.player_jumping=true;
+		}
 	}
 
 }

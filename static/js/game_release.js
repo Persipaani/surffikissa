@@ -51,6 +51,18 @@ var Game=function(){
 	this.lost=false;
 	this.won=false;
 	
+	//sound
+	this.soundCheckbox = document.getElementById('sound-checkbox');
+	
+	this.musicCheckbox = document.getElementById('music-checkbox');
+	this.soundOn = this.soundCheckbox.checked;
+	this.musicOn = this.musicCheckbox.checked;
+	
+	this.soundtrack          = document.getElementById('soundtrack');
+	this.jump_sound		= document.getElementById('jump');
+	this.collision_sound	= document.getElementById('collision');
+	console.log(this.collision_sound);
+	
 	//Sprite locations:
 	
 	//Celleissä x ja y meinaa koordinaatteja sheetissä (vasempaan yläkulmaan):
@@ -77,6 +89,7 @@ var Game=function(){
 				if(this.PossibleCollision(sprite,collidingsprite)==true){
 					if(this.Collided(sprite,collidingsprite,context)==true){
 						this.Collide(sprite,collidingsprite);
+						
 					}
 				}
 			}
@@ -129,6 +142,7 @@ var Game=function(){
 			//piilotetaan vihollinen:
 			//tehdaan pelaajalle vaadittava efekti:
 			game.CollideEffect(sprite,colliding);
+			game.collision_sound.play();
 		}
 	},
 	
@@ -164,6 +178,9 @@ var Game=function(){
 		}
 	},
 	
+	
+	
+	
 	//Create player Sprite:
 	this.playerspriter=new SpriteFromSheet(this.spritesheet,this.playercells_right),
 	//Create Sprites:
@@ -176,6 +193,11 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 	Run:function(){
 		this.player.animation_fps=this.animation_fps;
 		requestNextAnimationFrame(game.CalculateAnimation);
+		//this.soundCheckbox.onchange();
+		//this.musicCheckbox.onchange();
+		if (this.musicOn) {
+			this.soundtrack.play();
+		}
 	},
 	
 	Initialize:function(){
@@ -188,7 +210,7 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		game.Run();
 		}
 	},
-
+	
 	GenerateSprites:function(){
 		this.CreateRocks();
 		this.PositionSprites(this.rocks,this.rockdata);
@@ -320,9 +342,15 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		this.paused=!this.paused; //clever way to toggle false->true, true->false
 		if(this.paused==true){
 			this.pause_start=time_now;
+			if (this.musicOn){
+				this.soundtrack.pause();
+			}
 		}
 		else{
 			this.prev_time+=(time_now-this.pause_start);
+			if(this.musicOn){
+				this.soundtrack.play();
+			}
 		}
 	},
 	
@@ -366,6 +394,7 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		if(this.jumpstart==0 && game.player_jumping==true){
 			this.player.y-=10;
 			this.jumpstart=time;
+			this.jump_sound.play();
 		}
 		//Jumping on:
 		else if(time-this.jumpstart<this.JUMPTIME && game.player_jumping==true){
@@ -707,3 +736,19 @@ window.onfocus=function(){
 //START THE GAME:
 var game=new Game();
 game.Initialize();
+
+game.soundCheckbox.onchange = function (e) {
+		console.log("nappi");
+		game.soundOn = game.soundCheckbox.checked;
+	};
+	
+	game.musicCheckbox.onchange = function (e) {
+		game.musicOn = game.musicCheckbox.checked;
+console.log("nappi");
+	   if (snailBait.musicOn) {
+		  game.soundtrack.play();
+	   }
+	   else {
+		  game.soundtrack.pause();
+	   }
+	};

@@ -32,7 +32,28 @@
             </canvas>
         </div>
     </div>
-    
+	
+	<audio id='soundtrack'>
+        <source src='sounds/latino.mp3' type='audio/mp3'>
+        
+     </audio>
+	 <audio id='jump'>
+        <source src='sounds/jump.mp3' type='audio/mp3'>
+        
+     </audio>
+	 <audio id='collision'>
+        <source src='sounds/collision.mp3' type='audio/mp3'>
+        
+     </audio>
+    <div id='sound-and-music'>
+	   <div class='checkbox-div'>
+		  Sound <input id='sound-checkbox' type='checkbox' checked/>
+	   </div>
+			  
+	   <div class='checkbox-div'>
+		  Music <input id='music-checkbox' type='checkbox' checked/>
+	   </div>
+	</div>
     <script>
 	//START THE GAME:
 	var DEBUG = document.getElementById("debug");

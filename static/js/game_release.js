@@ -11,6 +11,9 @@ var Game=function(){
 	
 	this.animation_fps=5
 	this.background_speed=30,
+	this.BACKGROUND_DEFAULT_SPEED=30,
+	this.BACKGROUND_MAX_SPEED=50,
+	this.BACKGROUND_MIN_SPEED=20,
 	this.sprite_speed=this.background_speed*2.32, //4.32 originaali
 	this.player_acc=0.0,
 	this.player_vert_acc=0.0,
@@ -35,7 +38,9 @@ var Game=function(){
 	this.spritesheet = new Image(),
 	
 	//other:
-	this.CHANGE=3.0, //Speed of the player movement
+	this.CHANGE=2.0, //Speed of the player movement
+	this.MOVEMENT_DEACC=0.1*this.CHANGE; //How fast player movement stops (lower value is slower)
+	this.JUMP_DEACC=0.01*this.CHANGE; //How fast movement slows during jump
 	this.player_jumping=false,
 	this.player_colliding=false,
 	this.right_up=true, //for keys
@@ -47,9 +52,10 @@ var Game=function(){
 	this.partial_completion=0,
 	this.breath_bar_color="rgb(0,25,200)",
 	this.completion_bar_color="rgb(200,25,0)",
-	this.keypaused=false, //tells if game was paused by pressing p
+	this.keypaused=false, //tells if game was paused by pressing.
 	this.lost=false;
 	this.won=false;
+	this.onmenu=true;
 	
 	//sound
 	this.soundCheckbox = document.getElementById('sound-checkbox');
@@ -203,7 +209,7 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 	Initialize:function(){
 		this.GenerateSprites();
 		this.SetOffSets();
-		this.background.src = "static/img/sea_background.png";
+		this.background.src = "static/img/start_background.png";
 		this.spritesheet.src = "static/img/spritesheet.png";
 		//kun tausta on ladattu niin peli voi alkaa:
 		this.background.onload=function(e){
@@ -243,6 +249,23 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 	
 	CalculateBackground:function(){
 		//Calculate how much and what direction background moves:
+		
+		//if player is in the middle try to reset to default speed:
+		if(this.player.x<=300 && this.player.x>=100){
+			if(this.background_speed>this.BACKGROUND_DEFAULT_SPEED){
+				this.background_speed-=1;	
+			}
+			if(this.background_speed<this.BACKGROUND_DEFAULT_SPEED){
+				this.background_speed+=1;	
+			}
+		}
+		
+		//if player is on the lead the background tries to catch up until it reaches max
+		if(this.player.x>300 && this.background_speed<this.BACKGROUND_MAX_SPEED){
+			this.background_speed+=1;
+		}
+		
+		DEBUG.innerHTML="back_speed:"+this.background_speed;
 		var sum=this.background_offset+this.background_speed/this.fps;
 		
 		if(sum>0 && sum<this.background.width){
@@ -312,16 +335,16 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		if(game.paused==true){
 			setTimeout(function(){requestNextAnimationFrame(game.CalculateAnimation);},game.pausetimer);
 		}
-		
 		else{
 			if(game.breath<=0){
 				game.lost=!game.lost;
-				game.DrawMessage("You are out of breath! You lost!, PRESS P TO RESTART!",50,200,"rgb(250,0,0)");
-				game.ResetGame();
-				game.TogglePause();
-				setTimeout(function(){requestNextAnimationFrame(game.CalculateAnimation);},game.pausetimer);
-				return;
+				game.background.src="static/img/end_background.png";
+				//Nämä pitää timeouttaa hetken päähän, että background ehtii piirtyä kerran:
+				setTimeout(function(){game.onmenu=true;},10);
+				setTimeout(function(){game.DrawMessage("points here: ",50,200,"rgb(250,0,0)");},20);
+				setTimeout(function(){game.ResetGame();},30);
 			}
+			/*
 			if(game.completion>=100.0){
 				game.won=!game.won;
 				game.DrawMessage("You outran your chasers! You win!, PRESS P TO RESTART!",50,200,"rgb(250,0,0)");
@@ -331,9 +354,18 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 				return;
 				
 			}
+			*/
+			
 			game.fps = game.CalculateFPS(time);
 			game.Draw(time);
 			requestNextAnimationFrame(game.CalculateAnimation);
+			
+			//This is here since main menu must be drawn once before pause:
+			if(game.onmenu==true){
+				this.soundtrack.pause();
+				game.paused=true;
+				game.keypaused=true;
+			}
 		}
 	},
 	
@@ -399,16 +431,16 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		//Jumping on:
 		else if(time-this.jumpstart<this.JUMPTIME && game.player_jumping==true){
 				if(this.player_acc<0.0){
-				this.player_acc+=0.05;
+				this.player_acc+=this.JUMP_DEACC;
 				}
 				if(this.player_acc>0.0){
-					this.player_acc-=0.05;
+					this.player_acc-=this.JUMP_DEACC;
 				}
 				if(this.player_vert_acc<0.0){
-					this.player_vert_acc+=0.05;
+					this.player_vert_acc+=this.JUMP_DEACC;
 				}
 				if(this.player_vert_acc>0.0){
-					this.player_vert_acc-=0.05;
+					this.player_vert_acc-=this.JUMP_DEACC;
 				}
 		}
 		//Jumping ends:
@@ -418,16 +450,16 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 			this.jumpstart=0;
 			//Restore movement before jump:
 			if(this.left_up==false){
-				this.player_acc=-3.0;
+				this.player_acc=-this.CHANGE;
 			}
 			if(this.right_up==false){
-				this.player_acc=3.0;
+				this.player_acc=this.CHANGE;
 			}
 			if(this.up_up==false){
-				this.player_vert_acc=-3.0;
+				this.player_vert_acc=-this.CHANGE;
 			}
 			if(this.down_up==false){
-				this.player_vert_acc=3.0;
+				this.player_vert_acc=this.CHANGE;
 			}
 		}
 		
@@ -466,27 +498,25 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 			this.player.y=this.Y_LIMIT;
 		}
 		
-		if(this.player.y>400){
-			this.breath-=0.5;	
-		}
-		else if(this.player.y<100 && this.breath<100.0){
-			this.breath+=0.5;
+		//Henkeä tulee hitaasti lisää 100 asti
+		else if(this.breath<100.0){
+			this.breath+=0.05;
 		}
 		if(this.breath>100.0){
 			this.breath=100.0;
 		}
 
 		if(this.player_acc<0.0 && this.left_up==true){
-			this.player_acc+=0.3;
+			this.player_acc+=this.MOVEMENT_DEACC;
 		}
 		if(this.player_acc>0.0 && this.right_up==true){
-			this.player_acc-=0.3;
+			this.player_acc-=this.MOVEMENT_DEACC;
 		}
 		if(this.player_vert_acc<0.0 && this.up_up==true){
-			this.player_vert_acc+=0.3;
+			this.player_vert_acc+=this.MOVEMENT_DEACC;
 		}
 		if(this.player_vert_acc>0.0 && this.down_up==true){
-			this.player_vert_acc-=0.3;
+			this.player_vert_acc-=this.MOVEMENT_DEACC;
 		}
 		
 		
@@ -534,19 +564,27 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 	
 //DRAWING:
 	Draw:function(time){
-		//Calculations:
-		this.CalculatePlayer(time);
-		this.CalculateBackground();
-		this.CalculateSprites();
+		//Jos peli ei ole alku- tai loppumenussa piirretään kaikki muu
+		if(this.onmenu==false){
+			//Calculations:
+			this.CalculatePlayer(time);
+			this.CalculateBackground();
+			this.CalculateSprites();
+			
+			//Primitive objects:
+			this.DrawBackground();
+			this.DrawBreathBar();
+			this.DrawCompletionBar();
+			
+			//Sprites:
+			this.UpdateSprites(time);
+			this.DrawSprites();
+		}
+		//Tausta piirretään aina
+		else{
+			this.DrawBackground();
+		}
 		
-		//Primitive objects:
-		this.DrawBackground();
-		this.DrawBreathBar();
-		this.DrawCompletionBar();
-		
-		//Sprites:
-		this.UpdateSprites(time);
-		this.DrawSprites();
 	},
 	
 	DrawBackground:function(){
@@ -606,7 +644,6 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		setTimeout(function(){
 			colliding.collided=false;
 			game.player_colliding=false;
-			DEBUG.innerHTML="collision over!";
 			sprite.collided=false;
 			sprite.visible=true;
 			sprite.mode.cell_index=0;
@@ -663,10 +700,12 @@ window.onkeydown=function(e){
 	var keycode=e.keyCode;
 	//pause with p;
 	if(keycode==80){
-		if(game.lost==false && game.won==false){
+		if(game.lost==false && game.won==false && game.onmenu==false){
 			game.DrawMessage("PAUSED, PRESS P TO CONTINUE!",100,100,"rgb(250,0,0)");
 		}
 		else{
+			game.onmenu=false;
+			game.background.src="static/img/sea_background.png";
 			if(game.lost==true){
 				game.lost=false;
 			}

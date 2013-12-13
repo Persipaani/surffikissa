@@ -7,13 +7,25 @@ var Game=function(){
 
 	//Game Area:
 	this.X_LIMIT=750,
-	this.Y_LIMIT=350,
+	this.Y_LIMIT=360,
 	
-	this.animation_fps=5
-	this.background_speed=30,
+	//**************** Edit these to change difficulty of game etc *******************
+	this.START_LOC_X=10,
+	this.START_LOC_Y=150,
 	this.BACKGROUND_DEFAULT_SPEED=30,
 	this.BACKGROUND_MAX_SPEED=50,
 	this.BACKGROUND_MIN_SPEED=20,
+	this.BACKGROUND_ACC=0.2, //how fast speed of background changes
+	this.JUMPTIME=1000; //ms
+	this.COLLISION_DURATION=2000; //ms
+	this.CHANGE=3.0, //Speed of the player movement
+	this.MOVEMENT_DEACC=0.1*this.CHANGE; //How fast player movement stops (lower value is slower)
+	this.JUMP_DEACC=0.01*this.CHANGE; //How fast movement slows during jump
+	this.STARTING_BREATH=20.0
+	//**************** Edit these to change difficulty of game etc *******************
+	
+	this.animation_fps=5
+	this.background_speed=30,
 	this.sprite_speed=this.background_speed*2.32, //4.32 originaali
 	this.player_acc=0.0,
 	this.player_vert_acc=0.0,
@@ -22,8 +34,6 @@ var Game=function(){
 	this.background_offset=0,
 	
 	//timing:
-	this.JUMPTIME=1000; //ms
-	this.COLLISION_DURATION=2000; //ms
 	this.jumpstart=0;	//Jumping started at this time
 	this.prev_time=0,	//for FPS
 	this.prev_update=0, //for FPS
@@ -38,16 +48,13 @@ var Game=function(){
 	this.spritesheet = new Image(),
 	
 	//other:
-	this.CHANGE=2.0, //Speed of the player movement
-	this.MOVEMENT_DEACC=0.1*this.CHANGE; //How fast player movement stops (lower value is slower)
-	this.JUMP_DEACC=0.01*this.CHANGE; //How fast movement slows during jump
 	this.player_jumping=false,
 	this.player_colliding=false,
 	this.right_up=true, //for keys
 	this.left_up=true,	//for keys
 	this.up_up=true,	//for keys
 	this.down_up=true,	//for keys
-	this.breath=40.0,
+	this.breath=this.STARTING_BREATH,
 	this.completion=0.0,
 	this.partial_completion=0,
 	this.breath_bar_color="rgb(0,25,200)",
@@ -185,12 +192,14 @@ var Game=function(){
 	},
 	
 	
-	
-	
+	//Create rockspriter:
+	this.rockspriter=new SpriteFromSheet(this.spritesheet,this.rockcells);
 	//Create player Sprite:
 	this.playerspriter=new SpriteFromSheet(this.spritesheet,this.playercells_right),
 	//Create Sprites:
 	this.player=new Sprite("player",this.playerspriter,[this.CollisionAction,this.MoveAction]);
+	this.player.x=this.START_LOC_X;
+	this.player.y=this.START_LOC_Y;
 	this.sprites.push(this.player);
 }
 
@@ -233,9 +242,9 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 	
 	CreateRocks:function(){
 		var rock;
-		var rockspriter=new SpriteFromSheet(this.spritesheet,this.rockcells);
+		//var rockspriter=new SpriteFromSheet(this.spritesheet,this.rockcells);
 		for(var n=0;n<this.rockdata.length;++n){
-			rock=new Sprite("rock",rockspriter,[this.SplashAction]);
+			rock=new Sprite("rock",this.rockspriter,[this.SplashAction]);
 			rock.collided=false;
 			rock.width=35;
 			rock.height=25;
@@ -247,25 +256,46 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		}
 	},
 	
+	CreateOneRock:function(){
+		//Creates a new rock sprite in random location outside game area:
+		rock=new Sprite("rock",this.rockspriter,[this.SplashAction]);
+		rock.collided=false;
+		rock.width=35;
+		rock.height=25;
+		rock.x=Math.floor((Math.random()*2000)+this.X_LIMIT+50);
+		rock.y=Math.floor((Math.random()*this.Y_LIMIT)+10);
+		rock.animation_fps=this.animation_fps;
+		this.rocks.push(rock);
+		this.sprites.splice(0,0,rock);
+	},
+	
 	CalculateBackground:function(){
 		//Calculate how much and what direction background moves:
 		
 		//if player is in the middle try to reset to default speed:
-		if(this.player.x<=300 && this.player.x>=100){
+		if(this.player.x<=500 && this.player.x>=200){
 			if(this.background_speed>this.BACKGROUND_DEFAULT_SPEED){
-				this.background_speed-=1;	
+				this.background_speed-=this.BACKGROUND_ACC;	
 			}
 			if(this.background_speed<this.BACKGROUND_DEFAULT_SPEED){
-				this.background_speed+=1;	
+				this.background_speed+=this.BACKGROUND_ACC;	
 			}
 		}
 		
 		//if player is on the lead the background tries to catch up until it reaches max
-		if(this.player.x>300 && this.background_speed<this.BACKGROUND_MAX_SPEED){
-			this.background_speed+=1;
+		if(this.player.x>500 && this.background_speed<this.BACKGROUND_MAX_SPEED){
+			this.background_speed+=this.BACKGROUND_ACC;
 		}
 		
-		DEBUG.innerHTML="back_speed:"+this.background_speed;
+		//if player is behind background slows down until it moves as little as possible
+		if(this.player.x<200 && this.background_speed>this.BACKGROUND_MIN_SPEED){
+			this.background_speed-=this.BACKGROUND_ACC;
+		}
+		
+		//Finally let's update the speed of sprites to match background:
+		this.sprite_speed=this.background_speed*2.32
+		
+		DEBUG.innerHTML="back_speed:"+this.background_speed + "player_x" + this.player.x + "fps: " + game.fps;
 		var sum=this.background_offset+this.background_speed/this.fps;
 		
 		if(sum>0 && sum<this.background.width){
@@ -316,26 +346,52 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 	},
 	
 	ResetGame:function(){
-		//Reset variables:
-		game.breath=40.0;
-		game.prev_time=0;
-		game.prev_update=0;
-		game.completion=0.0;
-		game.partial_completion=0;
+		game.background_speed=30,
+		game.sprite_speed=game.background_speed*2.32, //4.32 originaali
+		game.player_acc=0.0,
+		game.player_vert_acc=0.0,
+		
+		//offsets:
+		game.background_offset=0,
+		
+		//timing:
+		game.jumpstart=0;	//Jumping started at game time
+		game.prev_time=0,	//for FPS
+		game.prev_update=0, //for FPS
+		game.fps=20,
+		
+		//other
+		game.player_jumping=false,
+		game.player_colliding=false,
+		game.right_up=true, //for keys
+		game.left_up=true,	//for keys
+		game.up_up=true,	//for keys
+		game.down_up=true,	//for keys
+		game.breath=game.STARTING_BREATH,
+		game.completion=0.0,
+		game.partial_completion=0,
+		game.lost=false;
+		game.won=false;
+		game.onmenu=true;
+		
+		//finally reset sprites:
 		game.sprites=[];
 		game.rocks=[];
 		game.playerspriter=new SpriteFromSheet(game.spritesheet,game.playercells_right);
-		game.player=new Sprite("player",game.playerspriter,[game.CollisionAction, game.MoveAction]);
+		game.player=new Sprite("player",this.playerspriter,[this.CollisionAction,this.MoveAction]);
+		game.player.y=game.START_LOC_Y;
+		game.player.x=game.START_LOC_X;
 		game.sprites.push(game.player);
 		game.GenerateSprites();
 		game.SetOffSets();
 	},
 	
 	CalculateAnimation:function(time){
-		if(game.paused==true){
+		if(game.paused==true && game.onmenu==false){
 			setTimeout(function(){requestNextAnimationFrame(game.CalculateAnimation);},game.pausetimer);
 		}
 		else{
+			//There are no winners here, only losers...
 			if(game.breath<=0){
 				game.lost=!game.lost;
 				game.background.src="static/img/end_background.png";
@@ -344,21 +400,12 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 				setTimeout(function(){game.DrawMessage("points here: ",50,200,"rgb(250,0,0)");},20);
 				setTimeout(function(){game.ResetGame();},30);
 			}
-			/*
-			if(game.completion>=100.0){
-				game.won=!game.won;
-				game.DrawMessage("You outran your chasers! You win!, PRESS P TO RESTART!",50,200,"rgb(250,0,0)");
-				game.ResetGame();
-				game.TogglePause();
-				setTimeout(function(){requestNextAnimationFrame(game.CalculateAnimation);},game.pausetimer);
-				return;
-				
-			}
-			*/
 			
 			game.fps = game.CalculateFPS(time);
 			game.Draw(time);
-			requestNextAnimationFrame(game.CalculateAnimation);
+			if(game.onmenu==false){
+				requestNextAnimationFrame(game.CalculateAnimation);
+			}
 			
 			//This is here since main menu must be drawn once before pause:
 			if(game.onmenu==true){
@@ -418,6 +465,11 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 	},
 	
 	RePosition:function(sprite){
+		//Random x so that it's initially outside of the screen:
+		sprite.x=Math.floor((Math.random()*2000)+this.X_LIMIT+50);
+		//Random y between player's max and min location:
+		sprite.y=Math.floor((Math.random()*this.Y_LIMIT)+10);
+		//finally reset offset:
 		sprite.offset=0;
 	},
 	
@@ -484,8 +536,8 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 			}
 		}
 		
-		if(this.player.x<50){
-			this.player.x=50;
+		if(this.player.x<10){
+			this.player.x=10;
 		}
 		if(this.player.x>this.X_LIMIT){
 			this.player.x=this.X_LIMIT;
@@ -534,14 +586,6 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 			this.player_vert_acc=0.0;
 		}
 		
-	},
-	
-	RemoveSprite:function(sprite){
-		//Nyt toimii vasta koirilla:
-		var index1=this.sprites.indexOf(sprite);
-		var index2=this.rocks.indexOf(sprite);
-		this.sprites.splice(index1,1);
-		this.rocks.splice(index2,1);	
 	},
 	
 	RemoveEnemiesFrom:function(x,y){
@@ -665,19 +709,6 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 
 //EVENT HANDLING:
 
-window.onmousedown=function(e){
-	//Tähän tulee vihollisten poisto
-	var mousebuttoncode=e.which;
-	//Left mouse:
-	if(mousebuttoncode==1){
-		//Remove enemies from mouselocation...
-		var x=e.clientX;
-		var y=e.clientY;
-		game.RemoveEnemiesFrom(x,y);
-	}
-}
-
-
 window.onkeyup=function(e){
 	//checks if key that was pressed down is up again.
 	var keycode=e.keyCode;
@@ -727,7 +758,7 @@ window.onkeydown=function(e){
 			game.up_up=false;
 		}
 		//down arrow moves down:
-		if(keycode==40 && game.paused==false && game.player.y<400.0){
+		if(keycode==40 && game.paused==false && game.player.y<game.Y_LIMIT){
 			e.preventDefault();
 			if(game.player_jumping==false){
 				game.player_vert_acc=game.CHANGE;
@@ -735,14 +766,14 @@ window.onkeydown=function(e){
 			game.down_up=false;
 		}
 		//Right arrow advances right:
-		if(keycode==39 && game.paused==false && game.player.x<800.0){
+		if(keycode==39 && game.paused==false && game.player.x<game.X_LIMIT){
 			if(game.player_jumping==false){
 				game.player_acc=game.CHANGE;
 			}
 			game.right_up=false;
 		}
 		//Left arrow advances left:
-		if(keycode==37 && game.paused==false && game.player.x>50.0){
+		if(keycode==37 && game.paused==false && game.player.x>10.0){
 			if(game.player_jumping==false){
 				game.player_acc=-game.CHANGE;
 			}

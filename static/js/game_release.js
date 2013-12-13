@@ -581,39 +581,6 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 
 	    DEBUG.innerHTML = "sprite_Y: " + sprite.y + "sprite_X:" + sprite.x;
 
-
-	    sprite.x = Math.floor((Math.random() * this.MAXROCKSPAWN) + this.X_LIMIT + 50);
-		//Random y between player's max and min location:
-	    sprite.y = Math.floor((Math.random() * (this.Y_LIMIT - 55)) + 55);
-	    if (sprite.type == "shark") {
-	        if (sprite.y<this.previous_shark_y+10 && sprite.y>this.previous_shark_y-10) {
-	            if (sprite.y < (this.Y_LIMIT - 50)) {
-	                sprite.y += 10;
-	            }
-	            else if (sprite.y>65){
-	                sprite.y -= 10;
-	            }
-	        }
-	        this.previous_shark_y=sprite.y
-	    }
-	    DEBUG.innerHTML = "positioned to:" + sprite.x + " / " + sprite.y;
-
-	    sprite.x = Math.floor((Math.random() * this.MAXROCKSPAWN) + this.X_LIMIT + 50);
-		//Random y between player's max and min location:
-	    sprite.y = Math.floor((Math.random() * (this.Y_LIMIT - 55)) + 55);
-	    if (sprite.type == "shark") {
-	        if (sprite.y<this.previous_shark_y+10 && sprite.y>this.previous_shark_y-10) {
-	            if (sprite.y < (this.Y_LIMIT - 50)) {
-	                sprite.y += 10;
-	            }
-	            else if (sprite.y>65){
-	                sprite.y -= 10;
-	            }
-	        }
-	        this.previous_shark_y=sprite.y
-	    }
-	    DEBUG.innerHTML = "positioned to:" + sprite.x + " / " + sprite.y;
-
 		//finally reset offset:
 		sprite.offset=0;
 	},

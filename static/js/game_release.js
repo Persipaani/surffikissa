@@ -15,54 +15,64 @@ var Game=function(){
 	this.BACKGROUND_DEFAULT_SPEED=30,
 	this.BACKGROUND_MAX_SPEED=50,
 	this.BACKGROUND_MIN_SPEED=20,
-	this.BACKGROUND_ACC=0.2, //how fast speed of background changes
+	this.BACKGROUND_ACC=0.2, //how fast speed of background changes on different places of it
 	this.JUMPTIME=1000; //ms
 	this.COLLISION_DURATION=2000; //ms
 	this.CHANGE=3.0, //Speed of the player movement
 	this.MOVEMENT_DEACC=0.1*this.CHANGE; //How fast player movement stops (lower value is slower)
 	this.JUMP_DEACC=0.01*this.CHANGE; //How fast movement slows during jump
-	this.STARTING_BREATH=20.0
+	this.STARTING_BREATH=20.0 //Starting breath amount
+	this.MAXROCKSPAWN = 2000, //How far rocks can spawn at max, will decrease when difficulty rises
+    this.BACKGROUNDSPEEDINCREASE = 5, //How fast background speed will increase with difficulty
+    this.TIMEFORDIFFICULTYINCREASE = 1000, //in ms
+    this.MAXROCKS = 80, //How many rocksprites at max difficulty
 	//**************** Edit these to change difficulty of game etc *******************
 	
 	this.animation_fps=5
-	this.background_speed=30,
-	this.sprite_speed=this.background_speed*2.32, //4.32 originaali
-	this.player_acc=0.0,
-	this.player_vert_acc=0.0,
-	
-	//offsets:
-	this.background_offset=0,
-	
-	//timing:
+    this.background_speed = 30,
+	this.sprite_speed = this.background_speed * 2.32, //4.32 originaali
+	this.player_acc = 0.0,
+	this.player_vert_acc = 0.0,
+
+    //offsets:
+	this.background_offset = 0,
+
+    //timing:
+    this.scoretimer = 0,
+    this.difficultytimer = 0,
 	this.jumpstart=0;	//Jumping started at this time
-	this.prev_time=0,	//for FPS
-	this.prev_update=0, //for FPS
-	this.fps=60,
-	this.paused=false,
-	this.pause_start=0, //Time when game was paused
-	this.pausetimer=200, //How often game checks if it's unpaused
-	this.window_active=true,
-	
-	//items:
-	this.background  = new Image(),
+    this.prev_time = 0,	//for FPS
+	this.prev_update = 0, //for FPS
+	this.fps = 60,
+	this.paused = false,
+	this.pause_start = 0, //Time when game was paused
+	this.pausetimer = 200, //How often game checks if it's unpaused
+	this.window_active = true,
+
+    //items:
+	this.background = new Image(),
 	this.spritesheet = new Image(),
-	
-	//other:
-	this.player_jumping=false,
-	this.player_colliding=false,
-	this.right_up=true, //for keys
-	this.left_up=true,	//for keys
-	this.up_up=true,	//for keys
-	this.down_up=true,	//for keys
-	this.breath=this.STARTING_BREATH,
-	this.completion=0.0,
-	this.partial_completion=0,
-	this.breath_bar_color="rgb(0,25,200)",
-	this.completion_bar_color="rgb(200,25,0)",
-	this.keypaused=false, //tells if game was paused by pressing.
-	this.lost=false;
-	this.won=false;
-	this.onmenu=true;
+
+    //other:
+	this.player_jumping = false,
+	this.player_colliding = false,
+	this.right_up = true, //for keys
+	this.left_up = true,	//for keys
+	this.up_up = true,	//for keys
+	this.down_up = true,	//for keys
+	this.breath = this.STARTING_BREATH,
+	this.completion = 0.0,
+	this.partial_completion = 0,
+	this.breath_bar_color = "rgb(0,25,200)",
+	this.completion_bar_color = "rgb(200,25,0)",
+	this.keypaused = false, //tells if game was paused by pressing.
+	this.lost = false,
+	this.won = false,
+	this.onmenu = true,
+	this.score = 0,
+    this.lvl = 0,
+    this.previous_shark_y = 0,
+
 	
 	//sound
 	this.soundCheckbox = document.getElementById('sound-checkbox');
@@ -309,7 +319,7 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		rock.width=35;
 		rock.height=25;
 		rock.x=Math.floor((Math.random()*2000)+this.X_LIMIT+50);
-		rock.y=Math.floor((Math.random()*this.Y_LIMIT)+10);
+		rock.y=Math.floor((Math.random()*(this.Y_LIMIT-55))+55);
 		rock.animation_fps=this.animation_fps;
 		this.rocks.push(rock);
 		this.sprites.splice(0,0,rock);
@@ -341,7 +351,7 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		//Finally let's update the speed of sprites to match background:
 		this.sprite_speed=this.background_speed*2.32
 		
-		DEBUG.innerHTML="back_speed:"+this.background_speed + "player_x" + this.player.x + "fps: " + game.fps;
+		//DEBUG.innerHTML="back_speed:"+this.background_speed + "sprites" + this.sprites.length + "lvl:" + this.lvl + "points: " + this.score;
 		var sum=this.background_offset+this.background_speed/this.fps;
 		
 		if(sum>0 && sum<this.background.width){
@@ -364,12 +374,7 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		for(var n=0;n<this.sprites.length;++n){
 			sprite=this.sprites[n];
 			if(sprite.type!="player"){
-				if(sprite.collided==false){
-					sprite.offset+=this.sprite_speed/this.fps;
-				}
-				else if(sprite.collided==true){
-					sprite.offset-=this.sprite_speed/this.fps
-				}
+			    sprite.offset+=this.sprite_speed/this.fps;
 			}
 		}
 	},
@@ -444,7 +449,7 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 				game.background.src="static/img/end_background.png";
 				//Nämä pitää timeouttaa hetken päähän, että background ehtii piirtyä kerran:
 				setTimeout(function(){game.onmenu=true;},10);
-				setTimeout(function(){game.DrawMessage("points here: ",50,200,"rgb(250,0,0)");},20);
+				setTimeout(function(){game.DrawMessage(game.score,70,240,"rgb(255,69,0)",40);},20);
 				setTimeout(function(){game.ResetGame();},30);
 			}
 			
@@ -513,9 +518,21 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 	
 	RePosition:function(sprite){
 		//Random x so that it's initially outside of the screen:
-		sprite.x=Math.floor((Math.random()*2000)+this.X_LIMIT+50);
+	    sprite.x = Math.floor((Math.random() * this.MAXROCKSPAWN) + this.X_LIMIT + 50);
 		//Random y between player's max and min location:
-		sprite.y=Math.floor((Math.random()*this.Y_LIMIT)+10);
+	    sprite.y = Math.floor((Math.random() * (this.Y_LIMIT - 55)) + 55);
+	    if (sprite.type == "shark") {
+	        if (sprite.y<this.previous_shark_y+10 && sprite.y>this.previous_shark_y-10) {
+	            if (sprite.y < (this.Y_LIMIT - 50)) {
+	                sprite.y += 10;
+	            }
+	            else if (sprite.y>65){
+	                sprite.y -= 10;
+	            }
+	        }
+	        this.previous_shark_y=sprite.y
+	    }
+	    DEBUG.innerHTML = "positioned to:" + sprite.x + " / " + sprite.y;
 		//finally reset offset:
 		sprite.offset=0;
 	},
@@ -591,8 +608,8 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 			this.player.x=this.X_LIMIT;
 		}
 		
-		if(this.player.y<10){
-			this.player.y=10;
+		if(this.player.y<55){
+			this.player.y=55;
 		}
 		if(this.player.y>this.Y_LIMIT){
 			this.player.y=this.Y_LIMIT;
@@ -636,34 +653,48 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		
 	},
 	
-	RemoveEnemiesFrom:function(x,y){
-		var x=x-this.canvas.getBoundingClientRect().left;
-		var y=y-this.canvas.getBoundingClientRect().top;
-		var sprite,sprite_x;
-		if(this.rocks.length!=0){
-				for(var n=0;n<this.rocks.length;++n){
-					sprite=this.rocks[n];
-					sprite_x=sprite.x-sprite.offset
-					//koordinaattien täytyy olla sinnetänne oikein:
-					if(y>=sprite.y-40 && y<=sprite.y+40){
-						if(x>=sprite_x-50 && x<=sprite_x+50){
-							this.RemoveSprite(sprite);
-						}
-					}	
-				}	
-		}
-		if(this.sharks.length!=0){
-			for(var n=0;n<this.sharks.length;++n){
-				sprite=this.sharks[n];
-				sprite_x=sprite.x-sprite.offset
-				//koordinaattien täytyy olla sinnetänne oikein:
-				if(y>=sprite.y-40 && y<=sprite.y+40){
-					if(x>=sprite_x-50 && x<=sprite_x+50){
-						this.RemoveSprite(sprite);
-					}
-				}	
-			}	
-	}
+	CalculateDifficulty: function (time) {
+	    //Start:
+	    if (this.difficultytimer==0){
+	        this.difficultytimer = time;
+	    }
+
+	    else if (time - this.difficultytimer > this.TIMEFORDIFFICULTYINCREASE) {
+
+	        if (this.sprites.length < this.MAXROCKS+1) {
+	            this.CreateOneRock();
+	        }
+	        if(this.BACKGROUND_MAX_SPEED<100){
+	            this.BACKGROUND_MAX_SPEED+=this.BACKGROUNDSPEEDINCREASE;
+	        }
+	        
+	        if(this.BACKGROUND_MIN_SPEED<this.BACKGROUND_MAX_SPEED){
+	            this.BACKGROUND_MIN_SPEED+=this.BACKGROUNDSPEEDINCREASE; 
+	        }
+
+	        if(this.BACKGROUND_DEFAULT_SPEED<this.BACKGROUND_MAX_SPEED){
+	            this.BACKGROUND_DEFAULT_SPEED+=this.BACKGROUNDSPEEDINCREASE; 
+	        }
+	        if (this.MAXROCKSPAWN > this.X_LIMIT + 50) {
+	            this.MAXROCKSPAWN -= 50;
+	        }
+
+	        this.lvl += 1;
+            this.difficultytimer = 0;
+	    }
+
+	},
+
+	CalculateScore: function (time) {
+	    if (this.scoretimer == 0 || this.scoretimer==undefined) {
+	        this.scoretimer = time;
+	    }
+            //pisteet 1s välein
+	    else if (time-this.scoretimer > 1000) {
+	        this.score += Math.floor(this.background_speed + this.sprites.length + this.player.x);
+	        this.scoretimer = 0;
+	    }
+
 	},
 	
 //DRAWING:
@@ -674,11 +705,13 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 			this.CalculatePlayer(time);
 			this.CalculateBackground();
 			this.CalculateSprites();
+			this.CalculateDifficulty(time);
+			this.CalculateScore(time);
 			
 			//Primitive objects:
 			this.DrawBackground();
 			this.DrawBreathBar();
-			this.DrawCompletionBar();
+			this.DrawInfo();
 			
 			//Sprites:
 			this.UpdateSprites(time);
@@ -689,6 +722,12 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 			this.DrawBackground();
 		}
 		
+	},
+
+	DrawInfo: function () {
+	    this.DrawMessage("Breath: ", 10, 30, "rgb(255,69,0)", 24)
+	    this.DrawMessage("Score: " + this.score + " | LVL: " + this.lvl, 10, 50, "rgb(255,69,0)", 24)
+
 	},
 	
 	DrawBackground:function(){
@@ -705,30 +744,16 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 	this.context.save();
 	this.context.strokeStyle=this.colorstyle;
 	this.context.fillStyle=this.breath_bar_color;
-	this.context.strokeRect(10, 10, this.breath, 15);
-	this.context.fillRect(10, 10, this.breath, 15);
+	this.context.strokeRect(100, 15, this.breath, 15);
+	this.context.fillRect(100, 15, this.breath, 15);
 	this.context.restore();
 	},
 	
-	DrawCompletionBar:function(){
-	//Calculate Completion:
-	this.partial_completion+=1;
-	if(this.partial_completion==100){
-		this.completion+=1;
-		this.partial_completion=0;
-	}
-	this.context.save();
-	this.context.strokeStyle=this.colorstyle;
-	this.context.fillStyle=this.completion_bar_color;
-	this.context.strokeRect(10, 30, this.completion, 10);
-	this.context.fillRect(10, 30, this.completion, 10);
-	this.context.restore();
-	},
 	
-	DrawMessage:function(msg,x,y,color){
+	DrawMessage:function(msg,x,y,color,size){
 		//Draws Message on screen
 		this.context.fillStyle=color;
-  		this.context.font="bold 24px Arial";
+  		this.context.font="bold " + size + "px Arial";
   		this.context.fillText(msg, x, y);
 	},
 	
@@ -792,7 +817,7 @@ window.onkeydown=function(e){
 	//pause with p;
 	if(keycode==80){
 		if(game.lost==false && game.won==false && game.onmenu==false){
-			game.DrawMessage("PAUSED, PRESS P TO CONTINUE!",100,100,"rgb(250,0,0)");
+			game.DrawMessage("PAUSED, PRESS P TO CONTINUE!",100,100,"rgb(250,0,0)",24);
 		}
 		else{
 			game.onmenu=false;
@@ -810,7 +835,7 @@ window.onkeydown=function(e){
 	}
 	//Can't move during jump!
 		//up arrow moves up:
-		if(keycode==38 && game.paused==false && game.player.y>10.0){
+		if(keycode==38 && game.paused==false && game.player.y>55.0){
 			e.preventDefault();
 			if(game.player_jumping==false){
 				game.player_vert_acc=-game.CHANGE;
@@ -850,7 +875,7 @@ window.onkeydown=function(e){
 window.onblur=function(){
 	game.window_active=false;
 	if(game.paused==false){
-		game.DrawMessage("LOST FOCUS, CLICK HERE TO CONTINUE!",100,100,"rgb(250,0,0)");
+		game.DrawMessage("LOST FOCUS, CLICK HERE TO CONTINUE!",100,100,"rgb(250,0,0)",24);
 		this.keypaused=false;
 		game.TogglePause();
 	}

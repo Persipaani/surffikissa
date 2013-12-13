@@ -21,8 +21,18 @@ var Game=function(){
 	this.CHANGE=3.0, //Speed of the player movement
 	this.MOVEMENT_DEACC=0.1*this.CHANGE; //How fast player movement stops (lower value is slower)
 	this.JUMP_DEACC=0.01*this.CHANGE; //How fast movement slows during jump
+<<<<<<< HEAD
+<<<<<<< HEAD
+	this.STARTING_BREATH=30.0 //Starting breath amount
+	this.MAXSPRITESPAWN = 2000, //How far rocks can spawn at max, will decrease when difficulty rises
+=======
 	this.STARTING_BREATH=20.0 //Starting breath amount
 	this.MAXROCKSPAWN = 2000, //How far rocks can spawn at max, will decrease when difficulty rises
+>>>>>>> cbbd87380edf58b9bd2701bdc3859ca656ba0d2c
+=======
+	this.STARTING_BREATH=20.0 //Starting breath amount
+	this.MAXROCKSPAWN = 2000, //How far rocks can spawn at max, will decrease when difficulty rises
+>>>>>>> cbbd87380edf58b9bd2701bdc3859ca656ba0d2c
     this.BACKGROUNDSPEEDINCREASE = 5, //How fast background speed will increase with difficulty
     this.TIMEFORDIFFICULTYINCREASE = 1000, //in ms
     this.MAXROCKS = 80, //How many rocksprites at max difficulty
@@ -73,7 +83,16 @@ var Game=function(){
 	this.onmenu = true,
 	this.score = 0,
     this.lvl = 0,
+<<<<<<< HEAD
+<<<<<<< HEAD
+    this.previous_y = 55,
+    this.previous_x = 0,
+=======
     this.previous_shark_y = 0,
+>>>>>>> cbbd87380edf58b9bd2701bdc3859ca656ba0d2c
+=======
+    this.previous_shark_y = 0,
+>>>>>>> cbbd87380edf58b9bd2701bdc3859ca656ba0d2c
 
 	
 	//sound
@@ -108,7 +127,7 @@ var Game=function(){
 	this.playercells_up = [{x:50, y:350,width:50,height:45},{x:100, y:350,width:50,height:45},
 							{x:150, y:350,width:50,height:45}];
 	//Tämä on sijaintidataa pelikentällä:
-	this.rockdata=[{x:1200,y:200},{x:1300,y:400},{x:1500,y:200},{x:1700,y:400},
+	this.rockdata=[{x:1200,y:55},{x:1300,y:155},{x:1500,y:200},{x:1700,y:255},
 	{x:1750,y:400},{x:1200,y:200},{x:1900,y:300},{x:2000,y:320}];
 	
 	this.sharkdata = [{x:1300,y:250},{x:1500,y:300},{x:1600,y:400},{x:1800,y:200},
@@ -301,7 +320,7 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 			shark.y=0;
 			shark.animation_fps=this.animation_fps;
 			this.sharks.push(shark);
-			this.sprites.splice(0,0,shark);
+			this.sprites.splice(this.sprites.length-1,0,shark);
 		}
 		
 	},
@@ -334,6 +353,25 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		this.rocks.push(rock);
 		this.sprites.splice(0,0,rock);
 	},
+<<<<<<< HEAD
+<<<<<<< HEAD
+
+	CreateOneShark: function () {
+	    //Creates a new shark sprite in random location outside game area:
+	    shark = new Sprite("shark", this.sharkspriter, [this.SharkAction]);
+	    shark.collided = false;
+	    shark.width = 100;
+	    shark.height = 100;
+	    shark.x = Math.floor((Math.random() * this.MAXSPRITESPAWN) + this.X_LIMIT + 50);;
+	    shark.y = Math.floor((Math.random() * (this.Y_LIMIT - 55)) + 55);;
+	    shark.animation_fps = this.animation_fps;
+	    this.sharks.push(shark);
+	    this.sprites.splice(this.sprites.length-1, 0, shark);
+	},
+=======
+>>>>>>> cbbd87380edf58b9bd2701bdc3859ca656ba0d2c
+=======
+>>>>>>> cbbd87380edf58b9bd2701bdc3859ca656ba0d2c
 	
 	CalculateBackground:function(){
 		//Calculate how much and what direction background moves:
@@ -530,6 +568,39 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 	
 	RePosition:function(sprite){
 		//Random x so that it's initially outside of the screen:
+<<<<<<< HEAD
+<<<<<<< HEAD
+	    sprite.x = Math.floor((Math.random() * this.MAXSPRITESPAWN) + this.X_LIMIT + 50);
+
+	    if (this.previous_x < this.MAXSPRITESPAWN ) {
+	        //lasketaan lisays (minimissään +this.X_LIMIT + 50, maksimissaan + 50 ja edellinen:
+	        this.previous_x += Math.floor((Math.random() * 600) + this.X_LIMIT + 50);
+	        sprite.x = this.previous_x;
+	    }
+	    else {
+	        //palataan alkuun
+	        sprite.x = Math.floor((Math.random() * 20) + this.X_LIMIT + 50);
+	        this.previous_x = sprite.x;
+	    }
+
+
+	    if (this.previous_y < (this.Y_LIMIT - 55)) {
+	        //lasketaan lisays (minimissään +10, maksimissaan + 55):
+	        this.previous_y += Math.floor((Math.random() * 55) + 10);
+	        sprite.y = this.previous_y;
+	    }
+	    else {
+            //palataan alkuun
+	        sprite.y = Math.floor((Math.random() * 20) + 55);
+	        this.previous_y = sprite.y;
+	    }
+
+	    this.previous_y = sprite.y;
+	    this.previous_x = sprite.x;
+
+	    DEBUG.innerHTML = "sprite_Y: " + sprite.y + "sprite_X:" + sprite.x;
+
+=======
 	    sprite.x = Math.floor((Math.random() * this.MAXROCKSPAWN) + this.X_LIMIT + 50);
 		//Random y between player's max and min location:
 	    sprite.y = Math.floor((Math.random() * (this.Y_LIMIT - 55)) + 55);
@@ -545,6 +616,24 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 	        this.previous_shark_y=sprite.y
 	    }
 	    DEBUG.innerHTML = "positioned to:" + sprite.x + " / " + sprite.y;
+>>>>>>> cbbd87380edf58b9bd2701bdc3859ca656ba0d2c
+=======
+	    sprite.x = Math.floor((Math.random() * this.MAXROCKSPAWN) + this.X_LIMIT + 50);
+		//Random y between player's max and min location:
+	    sprite.y = Math.floor((Math.random() * (this.Y_LIMIT - 55)) + 55);
+	    if (sprite.type == "shark") {
+	        if (sprite.y<this.previous_shark_y+10 && sprite.y>this.previous_shark_y-10) {
+	            if (sprite.y < (this.Y_LIMIT - 50)) {
+	                sprite.y += 10;
+	            }
+	            else if (sprite.y>65){
+	                sprite.y -= 10;
+	            }
+	        }
+	        this.previous_shark_y=sprite.y
+	    }
+	    DEBUG.innerHTML = "positioned to:" + sprite.x + " / " + sprite.y;
+>>>>>>> cbbd87380edf58b9bd2701bdc3859ca656ba0d2c
 		//finally reset offset:
 		sprite.offset=0;
 	},
@@ -631,13 +720,15 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 			this.player.y=this.Y_LIMIT;
 		}
 		
-		//Henkeä tulee hitaasti lisää 100 asti
-		else if(this.breath<100.0){
+
+		//Henkeä tulee hitaasti lisää 40 asti
+		else if(this.breath<40.0){
 			this.breath+=0.05;
 		}
-		if(this.breath>100.0){
-			this.breath=100.0;
+		if(this.breath>40.0){
+			this.breath=40.0;
 		}
+
 
 		if(this.player_acc<0.0 && this.left_up==true){
 			this.player_acc+=this.MOVEMENT_DEACC;

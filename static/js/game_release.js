@@ -30,6 +30,7 @@ var Game=function(){
     this.BACKGROUNDSPEEDINCREASE = 5, //How fast background speed will increase with difficulty
     this.TIMEFORDIFFICULTYINCREASE = 1000, //in ms
     this.MAXROCKS = 80, //How many rocksprites at max difficulty
+    this.MAXSHARKS = 10,
 	//**************** Edit these to change difficulty of game etc *******************
 	
 	this.animation_fps=5
@@ -718,6 +719,11 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 	        if (this.sprites.length < this.MAXROCKS+1) {
 	            this.CreateOneRock();
 	        }
+
+	        if (this.lvl % 5 == 0 && this.sharks.length < this.MAXSHARKS) {
+	            this.CreateOneShark();
+	        }
+
 	        if(this.BACKGROUND_MAX_SPEED<100){
 	            this.BACKGROUND_MAX_SPEED+=this.BACKGROUNDSPEEDINCREASE;
 	        }
@@ -869,14 +875,12 @@ window.onkeyup=function(e){
 	
 }
 
-
-
 window.onkeydown=function(e){
 	var keycode=e.keyCode;
 	//pause with p;
 	if(keycode==80){
 		if(game.lost==false && game.won==false && game.onmenu==false){
-			game.DrawMessage("PAUSED, PRESS P TO CONTINUE!",100,100,"rgb(250,0,0)",24);
+			game.DrawMessage("PAUSED, PRESS P TO CONTINUE!",180,220,"rgb(250,0,0)",24);
 		}
 		else{
 			game.onmenu=false;
@@ -936,7 +940,7 @@ window.onkeydown=function(e){
 window.onblur=function(){
 	game.window_active=false;
 	if(game.paused==false){
-		game.DrawMessage("LOST FOCUS, CLICK HERE TO CONTINUE!",100,100,"rgb(250,0,0)",24);
+		game.DrawMessage("LOST FOCUS, CLICK HERE TO CONTINUE!",150,220,"rgb(250,0,0)",24);
 		this.keypaused=false;
 		game.TogglePause();
 	}

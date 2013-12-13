@@ -22,10 +22,11 @@ var Game=function(){
 	this.MOVEMENT_DEACC=0.1*this.CHANGE; //How fast player movement stops (lower value is slower)
 	this.JUMP_DEACC=0.01*this.CHANGE; //How fast movement slows during jump
 	this.STARTING_BREATH=20.0 //Starting breath amount
-	this.MAXROCKSPAWN = 2000, //How far rocks can spawn at max, will decrease when difficulty rises
+	this.MAXSPRITESPAWN = 2000, //How far rocks can spawn at max, will decrease when difficulty rises
     this.BACKGROUNDSPEEDINCREASE = 5, //How fast background speed will increase with difficulty
     this.TIMEFORDIFFICULTYINCREASE = 1000, //in ms
     this.MAXROCKS = 80, //How many rocksprites at max difficulty
+    this.MAXSHARKS = 10, //Same for sharks
 	//**************** Edit these to change difficulty of game etc *******************
 	
 	this.animation_fps=5
@@ -71,7 +72,8 @@ var Game=function(){
 	this.onmenu = true,
 	this.score = 0,
     this.lvl = 0,
-    this.previous_shark_y = 0,
+    this.previous_y = 0,
+    this.previous_x = 0,
 
 	
 	//sound
@@ -101,8 +103,7 @@ var Game=function(){
 	this.rockdata=[{x:1200,y:200},{x:1300,y:400},{x:1500,y:200},{x:1700,y:400},
 	{x:1750,y:400},{x:1200,y:200},{x:1900,y:300},{x:2000,y:320}];
 	
-	this.sharkdata = [{x:1300,y:250},{x:1500,y:300},{x:1600,y:400},{x:1800,y:200},
-	              	{x:1900,y:300},{x:2000,y:450},{x:2050,y:100},{x:2200,y:320}]
+	this.sharkdata = [{ x: 1300, y: 250 }, { x: 1500, y: 300 }];
 	
 	this.rocks=[];
 	this.sharks=[];
@@ -318,11 +319,24 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		rock.collided=false;
 		rock.width=35;
 		rock.height=25;
-		rock.x=Math.floor((Math.random()*2000)+this.X_LIMIT+50);
+		rock.x=Math.floor((Math.random()*this.MAXSPRITESPAWN)+this.X_LIMIT+50);
 		rock.y=Math.floor((Math.random()*(this.Y_LIMIT-55))+55);
 		rock.animation_fps=this.animation_fps;
 		this.rocks.push(rock);
 		this.sprites.splice(0,0,rock);
+	},
+
+	CreateOneShark: function () {
+	    //Creates a new shark sprite in random location outside game area:
+	    shark = new Sprite("shark", this.sharkspriter, [this.SharkAction]);
+	    shark.collided = false;
+	    shark.width = 100;
+	    shark.height = 100;
+	    shark.x = Math.floor((Math.random() * this.MAXSPRITESPAWN) + this.X_LIMIT + 50);;
+	    shark.y = Math.floor((Math.random() * (this.Y_LIMIT - 55)) + 55);;
+	    shark.animation_fps = this.animation_fps;
+	    this.sharks.push(shark);
+	    this.sprites.splice(0, 0, shark);
 	},
 	
 	CalculateBackground:function(){
@@ -351,7 +365,7 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		//Finally let's update the speed of sprites to match background:
 		this.sprite_speed=this.background_speed*2.32
 		
-		//DEBUG.innerHTML="back_speed:"+this.background_speed + "sprites" + this.sprites.length + "lvl:" + this.lvl + "points: " + this.score;
+		//DEBUG.innerHTML="back_speed:"+ this.background_speed + "rocks:" + this.rocks.length + "sharks: " + this.sharks.length;
 		var sum=this.background_offset+this.background_speed/this.fps;
 		
 		if(sum>0 && sum<this.background.width){
@@ -518,21 +532,17 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 	
 	RePosition:function(sprite){
 		//Random x so that it's initially outside of the screen:
-	    sprite.x = Math.floor((Math.random() * this.MAXROCKSPAWN) + this.X_LIMIT + 50);
+	    sprite.x = Math.floor((Math.random() * this.MAXSPRITESPAWN) + this.X_LIMIT + 50);
 		//Random y between player's max and min location:
 	    sprite.y = Math.floor((Math.random() * (this.Y_LIMIT - 55)) + 55);
-	    if (sprite.type == "shark") {
-	        if (sprite.y<this.previous_shark_y+10 && sprite.y>this.previous_shark_y-10) {
-	            if (sprite.y < (this.Y_LIMIT - 50)) {
-	                sprite.y += 10;
-	            }
-	            else if (sprite.y>65){
-	                sprite.y -= 10;
-	            }
-	        }
-	        this.previous_shark_y=sprite.y
+
+	    if (sprite.x < sprite.previous_x - 10 && sprite.x > sprite.previous_x + 10) {
+	        DEBUG.innerHTML = "repo";
+	        sprite.x = Math.floor((Math.random() * this.MAXSPRITESPAWN) + this.X_LIMIT + 50);
 	    }
-	    DEBUG.innerHTML = "positioned to:" + sprite.x + " / " + sprite.y;
+
+	    this.previous_x = sprite.x;
+	    this.previous_y = sprite.y;
 		//finally reset offset:
 		sprite.offset=0;
 	},
@@ -661,9 +671,17 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 
 	    else if (time - this.difficultytimer > this.TIMEFORDIFFICULTYINCREASE) {
 
-	        if (this.sprites.length < this.MAXROCKS+1) {
+            //New rock with every level
+	        if (this.rocks.length < this.MAXROCKS) {
 	            this.CreateOneRock();
 	        }
+
+	        //Every 5 levels there will be shark
+	        if (this.lvl % 5 == 0 && this.sharks.length<this.MAXSHARKS) {
+	            this.CreateOneShark()
+	        }
+
+
 	        if(this.BACKGROUND_MAX_SPEED<100){
 	            this.BACKGROUND_MAX_SPEED+=this.BACKGROUNDSPEEDINCREASE;
 	        }
@@ -675,8 +693,8 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 	        if(this.BACKGROUND_DEFAULT_SPEED<this.BACKGROUND_MAX_SPEED){
 	            this.BACKGROUND_DEFAULT_SPEED+=this.BACKGROUNDSPEEDINCREASE; 
 	        }
-	        if (this.MAXROCKSPAWN > this.X_LIMIT + 50) {
-	            this.MAXROCKSPAWN -= 50;
+	        if (this.MAXSPRITESPAWN > this.X_LIMIT + 50) {
+	            this.MAXSPRITESPAWN -= 50;
 	        }
 
 	        this.lvl += 1;
@@ -817,7 +835,7 @@ window.onkeydown=function(e){
 	//pause with p;
 	if(keycode==80){
 		if(game.lost==false && game.won==false && game.onmenu==false){
-			game.DrawMessage("PAUSED, PRESS P TO CONTINUE!",100,100,"rgb(250,0,0)",24);
+			game.DrawMessage("PAUSED, PRESS P TO CONTINUE!",190,220,"rgb(250,0,0)",24);
 		}
 		else{
 			game.onmenu=false;
@@ -875,7 +893,7 @@ window.onkeydown=function(e){
 window.onblur=function(){
 	game.window_active=false;
 	if(game.paused==false){
-		game.DrawMessage("LOST FOCUS, CLICK HERE TO CONTINUE!",100,100,"rgb(250,0,0)",24);
+		game.DrawMessage("LOST FOCUS, CLICK HERE TO CONTINUE!",150,220,"rgb(250,0,0)",24);
 		this.keypaused=false;
 		game.TogglePause();
 	}

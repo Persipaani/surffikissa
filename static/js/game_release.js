@@ -21,18 +21,12 @@ var Game=function(){
 	this.CHANGE=3.0, //Speed of the player movement
 	this.MOVEMENT_DEACC=0.1*this.CHANGE; //How fast player movement stops (lower value is slower)
 	this.JUMP_DEACC=0.01*this.CHANGE; //How fast movement slows during jump
-<<<<<<< HEAD
-<<<<<<< HEAD
 	this.STARTING_BREATH=30.0 //Starting breath amount
 	this.MAXSPRITESPAWN = 2000, //How far rocks can spawn at max, will decrease when difficulty rises
-=======
 	this.STARTING_BREATH=20.0 //Starting breath amount
 	this.MAXROCKSPAWN = 2000, //How far rocks can spawn at max, will decrease when difficulty rises
->>>>>>> cbbd87380edf58b9bd2701bdc3859ca656ba0d2c
-=======
 	this.STARTING_BREATH=20.0 //Starting breath amount
 	this.MAXROCKSPAWN = 2000, //How far rocks can spawn at max, will decrease when difficulty rises
->>>>>>> cbbd87380edf58b9bd2701bdc3859ca656ba0d2c
     this.BACKGROUNDSPEEDINCREASE = 5, //How fast background speed will increase with difficulty
     this.TIMEFORDIFFICULTYINCREASE = 1000, //in ms
     this.MAXROCKS = 80, //How many rocksprites at max difficulty
@@ -83,16 +77,11 @@ var Game=function(){
 	this.onmenu = true,
 	this.score = 0,
     this.lvl = 0,
-<<<<<<< HEAD
-<<<<<<< HEAD
     this.previous_y = 55,
     this.previous_x = 0,
-=======
     this.previous_shark_y = 0,
->>>>>>> cbbd87380edf58b9bd2701bdc3859ca656ba0d2c
-=======
     this.previous_shark_y = 0,
->>>>>>> cbbd87380edf58b9bd2701bdc3859ca656ba0d2c
+
 
 	
 	//sound
@@ -353,8 +342,7 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		this.rocks.push(rock);
 		this.sprites.splice(0,0,rock);
 	},
-<<<<<<< HEAD
-<<<<<<< HEAD
+
 
 	CreateOneShark: function () {
 	    //Creates a new shark sprite in random location outside game area:
@@ -368,10 +356,6 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 	    this.sharks.push(shark);
 	    this.sprites.splice(this.sprites.length-1, 0, shark);
 	},
-=======
->>>>>>> cbbd87380edf58b9bd2701bdc3859ca656ba0d2c
-=======
->>>>>>> cbbd87380edf58b9bd2701bdc3859ca656ba0d2c
 	
 	CalculateBackground:function(){
 		//Calculate how much and what direction background moves:
@@ -568,8 +552,6 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 	
 	RePosition:function(sprite){
 		//Random x so that it's initially outside of the screen:
-<<<<<<< HEAD
-<<<<<<< HEAD
 	    sprite.x = Math.floor((Math.random() * this.MAXSPRITESPAWN) + this.X_LIMIT + 50);
 
 	    if (this.previous_x < this.MAXSPRITESPAWN ) {
@@ -600,7 +582,7 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 
 	    DEBUG.innerHTML = "sprite_Y: " + sprite.y + "sprite_X:" + sprite.x;
 
-=======
+
 	    sprite.x = Math.floor((Math.random() * this.MAXROCKSPAWN) + this.X_LIMIT + 50);
 		//Random y between player's max and min location:
 	    sprite.y = Math.floor((Math.random() * (this.Y_LIMIT - 55)) + 55);
@@ -616,8 +598,7 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 	        this.previous_shark_y=sprite.y
 	    }
 	    DEBUG.innerHTML = "positioned to:" + sprite.x + " / " + sprite.y;
->>>>>>> cbbd87380edf58b9bd2701bdc3859ca656ba0d2c
-=======
+
 	    sprite.x = Math.floor((Math.random() * this.MAXROCKSPAWN) + this.X_LIMIT + 50);
 		//Random y between player's max and min location:
 	    sprite.y = Math.floor((Math.random() * (this.Y_LIMIT - 55)) + 55);
@@ -633,7 +614,7 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 	        this.previous_shark_y=sprite.y
 	    }
 	    DEBUG.innerHTML = "positioned to:" + sprite.x + " / " + sprite.y;
->>>>>>> cbbd87380edf58b9bd2701bdc3859ca656ba0d2c
+
 		//finally reset offset:
 		sprite.offset=0;
 	},

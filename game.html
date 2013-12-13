@@ -17,6 +17,19 @@
   </head>
 
   <body>
+  
+  	<audio id='soundtrack'>
+        <source src='sounds/latino.mp3' type='audio/mp3'>
+        
+     </audio>
+	 <audio id='jump'>
+        <source src='sounds/jump.mp3' type='audio/mp3'>
+        
+     </audio>
+	 <audio id='collision'>
+        <source src='sounds/collision.mp3' type='audio/mp3'>
+        
+     </audio>
     <!--Header Info:-->
             <header>
             <h1>Surffikissa</h1>
@@ -33,25 +46,11 @@
         </div>
     </div>
 	
-	<audio id='soundtrack'>
-        <source src='sounds/latino.mp3' type='audio/mp3'>
-        
-     </audio>
-	 <audio id='jump'>
-        <source src='sounds/jump.mp3' type='audio/mp3'>
-        
-     </audio>
-	 <audio id='collision'>
-        <source src='sounds/collision.mp3' type='audio/mp3'>
-        
-     </audio>
+	
     <div id='sound-and-music'>
 	   <div class='checkbox-div'>
-		  Sound <input id='sound-checkbox' type='checkbox' checked/>
-	   </div>
-			  
-	   <div class='checkbox-div'>
-		  Music <input id='music-checkbox' type='checkbox' checked/>
+		  Sound effects<input id='sound-checkbox' type='checkbox' onkeydown="return false;" checked/>
+		  Music <input id='music-checkbox' type='checkbox' onkeydown="return false;" checked/>  
 	   </div>
 	</div>
     <script>
@@ -59,7 +58,72 @@
 	var DEBUG = document.getElementById("debug");
 	var game=new Game();
 	game.Initialize();
+	game.soundCheckbox.onchange = function (e) {
+		game.soundOn = game.soundCheckbox.checked;
+	};
+	
+	game.musicCheckbox.onmousedown = function (e) {
+		if (game.musicOn) game.musicOn  = false
+		else game.musicOn = true
+		//game.musicOn = game.musicCheckbox.checked;
+	   if (game.musicOn) {
+		  game.soundtrack.play();
+	   }
+	   else {
+		  game.soundtrack.pause();
+	   }
+	};
 	</script>
 
   </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

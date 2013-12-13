@@ -148,7 +148,8 @@ var Game=function(){
 			//piilotetaan vihollinen:
 			//tehdaan pelaajalle vaadittava efekti:
 			game.CollideEffect(sprite,colliding);
-			game.collision_sound.play();
+			if (game.soundOn)
+				game.collision_sound.play();
 		}
 	},
 	
@@ -426,7 +427,8 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		if(this.jumpstart==0 && game.player_jumping==true){
 			this.player.y-=10;
 			this.jumpstart=time;
-			this.jump_sound.play();
+			if (this.soundOn)
+				this.jump_sound.play();
 		}
 		//Jumping on:
 		else if(time-this.jumpstart<this.JUMPTIME && game.player_jumping==true){
@@ -776,18 +778,3 @@ window.onfocus=function(){
 var game=new Game();
 game.Initialize();
 
-game.soundCheckbox.onchange = function (e) {
-		console.log("nappi");
-		game.soundOn = game.soundCheckbox.checked;
-	};
-	
-	game.musicCheckbox.onchange = function (e) {
-		game.musicOn = game.musicCheckbox.checked;
-console.log("nappi");
-	   if (snailBait.musicOn) {
-		  game.soundtrack.play();
-	   }
-	   else {
-		  game.soundtrack.pause();
-	   }
-	};

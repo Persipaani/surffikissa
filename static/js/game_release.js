@@ -84,12 +84,18 @@ var Game=function(){
 	this.playercells_still=[{x:0,y:83,width:50,height:35},{x:54,y:83,width:45,height:35},{x:107,y:83,width:48,height:35}],
 	this.playercells_jumping=[{x:0,y:120,width:45,height:45},{x:57,y:120,width:45,height:45},{x:109,y:120,width:45,height:45}],
 	this.playercells_colliding=[{x:6,y:168,width:45,height:35},{x:62,y:168,width:45,height:35},{x:168,y:120,width:45,height:35}],
-	this.rockcells=[{x:5,y:50,width:35,height:25},{x:53,y:50,width:35,height:25},{x:101,y:50,width:35,height:25}],
+	this.rockcells=[{x:5,y:50,width:35,height:25},{x:53,y:50,width:35,height:25},{x:101,y:50,width:35,height:25},];
+	this.sharkcells = [{x:5, y: 200, width: 100, height:100},{x:5+100, y: 200, width: 100, height:100},{x:5+200, y: 200, width: 100, height:100},
+						{x:5+300, y: 200, width: 100, height:100} ];
 	//Tämä on sijaintidataa pelikentällä:
 	this.rockdata=[{x:1200,y:200},{x:1300,y:400},{x:1500,y:200},{x:1700,y:400},
 	{x:1750,y:400},{x:1200,y:200},{x:1900,y:300},{x:2000,y:320}];
 	
+	this.sharkdata = [{x:1300,y:250},{x:1500,y:300},{x:1600,y:400},{x:1800,y:200},
+	              	{x:1900,y:300},{x:2000,y:450},{x:2050,y:100},{x:2200,y:320}]
+	
 	this.rocks=[];
+	this.sharks=[];
 	this.sprites=[]; //All sprites!
 	
 	//Sprite actions:
@@ -191,8 +197,24 @@ var Game=function(){
 			}
 		}
 	},
+	this.SharkAction={
+			previous:0,
+			Execute: function(sprite,context,time,fps){
+				if(sprite.animation_fps==0){
+					return;
+				}
+				if(this.previous==0){
+					this.previous=time;
+				}
+				else if(time-this.previous>1000/sprite.animation_fps){
+					sprite.mode.NextCell()
+					this.previous=time;
+				}
+			}
+		},
 	
-	
+	// shark
+	this.sharkspriter = new SpriteFromSheet(this.spritesheet, this.sharkcells);
 	//Create rockspriter:
 	this.rockspriter=new SpriteFromSheet(this.spritesheet,this.rockcells);
 	//Create player Sprite:
@@ -220,7 +242,7 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		this.GenerateSprites();
 		this.SetOffSets();
 		this.background.src = "static/img/start_background.png";
-		this.spritesheet.src = "static/img/spritesheet.png";
+		this.spritesheet.src = "static/img/spritesheet1.png";
 		//kun tausta on ladattu niin peli voi alkaa:
 		this.background.onload=function(e){
 		game.Run();
@@ -229,7 +251,14 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 	
 	GenerateSprites:function(){
 		this.CreateRocks();
-		this.PositionSprites(this.rocks,this.rockdata);
+		this.CreateSharks();
+		var sprites = [];
+		sprites.push(this.rocks);
+		sprites.push(this.sharks);
+		var spritedata = [];
+		spritedata.push(this.rockdata);
+		spritedata.push(this.sharkdata);
+		this.PositionSprites(sprites,spritedata);
 	},
 	
 	PositionSprites:function(sprites,spritedata){
@@ -239,6 +268,22 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 			sprite.x=spritedata[n].x;
 			sprite.y=spritedata[n].y;
 		}
+	},
+	
+	CreateSharks:function(){
+		var shark;
+		for (var n=0; n<=this.sharkdata.length;++n){
+			shark=new Sprite("shark",this.sharkspriter,[this.SharkAction]);
+			shark.collided=false;
+			shark.width=100;
+			shark.height=100;
+			shark.x=0;
+			shark.y=0;
+			shark.animation_fps=this.animation_fps;
+			this.sharks.push(shark);
+			this.sprites.splice(0,0,shark);
+		}
+		
 	},
 	
 	CreateRocks:function(){
@@ -378,6 +423,7 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		//finally reset sprites:
 		game.sprites=[];
 		game.rocks=[];
+		game.sharks = [];
 		game.playerspriter=new SpriteFromSheet(game.spritesheet,game.playercells_right);
 		game.player=new Sprite("player",this.playerspriter,[this.CollisionAction,this.MoveAction]);
 		game.player.y=game.START_LOC_Y;
@@ -606,6 +652,18 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 					}	
 				}	
 		}
+		if(this.sharks.length!=0){
+			for(var n=0;n<this.sharks.length;++n){
+				sprite=this.sharks[n];
+				sprite_x=sprite.x-sprite.offset
+				//koordinaattien täytyy olla sinnetänne oikein:
+				if(y>=sprite.y-40 && y<=sprite.y+40){
+					if(x>=sprite_x-50 && x<=sprite_x+50){
+						this.RemoveSprite(sprite);
+					}
+				}	
+			}	
+	}
 	},
 	
 //DRAWING:

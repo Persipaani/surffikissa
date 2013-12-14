@@ -320,7 +320,7 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		//this.musicCheckbox.onchange();
 		if (this.musicOn) {
 			this.soundtrack.play();
-			console.log(this.soundtrack.paused);
+			//console.log(this.soundtrack.paused);
 		}
 	},
 	
@@ -647,7 +647,7 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		
 		//sounds
 		game.game_over_sound.pause();
-		console.log("game_over_sound: ", game.game_over_sound.paused)
+		//console.log("game_over_sound: ", game.game_over_sound.paused)
 	},
 	
 	CalculateAnimation:function(time){
@@ -659,7 +659,7 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 			if(game.breath<1 && game.lost == false){
 				game.game_over_screen = true;
 				game.soundtrack.pause();
-				setTimeout(function(){game.game_over_sound.play();},1500);
+				setTimeout(function(){game.game_over_sound.currentTime = 0;game.game_over_sound.play();},1500);
 				game.lost= true;
 				game.background_speed = 0;
 				setTimeout(function(){game.background_offset=0;game.background.src="static/img/end_background.png";}, 9000);
@@ -800,6 +800,7 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 			this.player.y-=10;
 			this.jumpstart=time;
 			if (this.soundOn)
+				this.jump_sound.currentTime = 0;
 				this.jump_sound.play();
 		}
 		//Jumping on:
@@ -1049,6 +1050,7 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		if(colliding.type =="fish"){
 			this.breath =40;
 			colliding.visible = false;
+			this.cat_sound.currentTime = 0;
 			this.cat_sound.play();
 			//console.log("kala");
 			colliding.collided=false;
@@ -1067,6 +1069,7 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 			colliding.collided=true;
 			game.player_colliding=true;
 			if (game.soundOn)
+				game.collision_sound.currentTime = 0;
 				game.collision_sound.play();
 			//Törmäyksen jälkeen:
 			setTimeout(function(){

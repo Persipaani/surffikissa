@@ -1143,7 +1143,8 @@ window.onkeydown=function(e){
 			}
 			game.left_up=false;
 		}
-		if(keycode==32 && game.player_jumping==false && game.player_colliding==false){
+		if (keycode == 32 && game.player_jumping == false && game.player_colliding == false) {
+		    e.preventDefault();
 			if (!game.spacebar_down)
 				game.player_jumping=true;
 			game.spacebar_down = true;

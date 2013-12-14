@@ -1010,7 +1010,7 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 	CollideEffect:function(sprite,colliding,silent){
 		sprite.collided=true;
 		if(colliding.type =="fish"){
-			this.breath =400;
+			this.breath =40;
 			colliding.visible = false;
 			this.cat_sound.play();
 			//console.log("kala");

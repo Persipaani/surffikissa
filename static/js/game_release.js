@@ -23,12 +23,8 @@ var Game=function(){
 	this.JUMP_DEACC=0.01*this.CHANGE; //How fast movement slows during jump
 	this.STARTING_BREATH=30.0 //Starting breath amount
 	this.MAXSPRITESPAWN = 2000, //How far rocks can spawn at max, will decrease when difficulty rises
-	this.STARTING_BREATH=20.0 //Starting breath amount
-	this.MAXROCKSPAWN = 2000, //How far rocks can spawn at max, will decrease when difficulty rises
-	this.STARTING_BREATH=20.0 //Starting breath amount
-	this.MAXROCKSPAWN = 2000, //How far rocks can spawn at max, will decrease when difficulty rises
     this.BACKGROUNDSPEEDINCREASE = 5, //How fast background speed will increase with difficulty
-    this.TIMEFORDIFFICULTYINCREASE = 1000, //in ms
+    this.TIMEFORDIFFICULTYINCREASE = 3000, //in ms
     this.MAXROCKS = 80, //How many rocksprites at max difficulty
     this.MAXSHARKS = 10,
     this.MAXBOATS = 5,
@@ -70,10 +66,7 @@ var Game=function(){
 	this.up_up = true,	//for keys
 	this.down_up = true,	//for keys
 	this.breath = this.STARTING_BREATH,
-	this.completion = 0.0,
-	this.partial_completion = 0,
 	this.breath_bar_color = "rgb(0,25,200)",
-	this.completion_bar_color = "rgb(200,25,0)",
 	this.keypaused = false, //tells if game was paused by pressing.
 	this.lost = false,
 	this.won = false,
@@ -82,8 +75,6 @@ var Game=function(){
     this.lvl = 0,
     this.previous_y = 55,
     this.previous_x = 0,
-    this.previous_shark_y = 0,
-    this.previous_shark_y = 0,
     this.spacebar_down = false, //ettei voi hyppiä spacebar pohjassa
     this.game_over_screen = false;
 
@@ -560,8 +551,55 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 	},
 	
 	ResetGame:function(){
-		console.log("reseting game");
+	    console.log("reseting game");
+
+	    //**************** Edit these to change difficulty of game etc *******************
+	    this.BACKGROUND_DEFAULT_SPEED = 30;
+	    this.BACKGROUND_MAX_SPEED = 50;
+	    this.BACKGROUND_MIN_SPEED = 20;
+	    this.STARTING_BREATH = 30.0 //Starting breath amount
+	    this.MAXSPRITESPAWN = 2000, //How far rocks can spawn at max, will decrease when difficulty rises
+        this.STARTING_BREATH = 30.0 //Starting breath amount
+	    //**************** Edit these to change difficulty of game etc *******************
+
+	    this.background_speed = 30,
+        this.sprite_speed = this.background_speed * 2.32, //4.32 originaali
+        this.player_acc = 0.0,
+        this.player_vert_acc = 0.0,
+
+	    //offsets:
+        this.background_offset = 0,
+
+	    //timing:
+        this.scoretimer = 0,
+        this.difficultytimer = 0,
+        this.jumpstart = 0;	//Jumping started at this time
+	    this.prev_time = 0,	//for FPS
+        this.prev_update = 0, //for FPS
+        this.fps = 60,
+        this.window_active = true,
+
+	    //other:
+        this.player_jumping = false,
+        this.player_up = false,
+        this.player_down = false,
+        this.player_colliding = false,
+        this.right_up = true, //for keys
+        this.left_up = true,	//for keys
+        this.up_up = true,	//for keys
+        this.down_up = true,	//for keys
+        this.breath = this.STARTING_BREATH,
+        this.breath_bar_color = "rgb(0,25,200)",
+        this.lost = false,
+        this.won = false,
+        this.score = 0,
+        this.lvl = 0,
+        this.previous_y = 55,
+        this.previous_x = 0,
+        this.spacebar_down = false, //ettei voi hyppiä spacebar pohjassa
+        this.game_over_screen = false;
 		
+        /*
 		game.background_speed=30,
 		game.sprite_speed=game.background_speed*2.32, //4.32 originaali
 		game.player_acc=0.0,
@@ -586,14 +624,13 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		game.up_up=true,	//for keys
 		game.down_up=true,	//for keys
 		game.breath=game.STARTING_BREATH,
-		game.completion=0.0,
-		game.partial_completion=0,
 		game.lost=false;
 		game.won=false;
 		game.onmenu=true;
-		game.score =0;
+		game.score = 0;
 		game.scoretimer = 0;
 		game.game_over_screen = false;
+        */
 		//finally reset sprites:
 		game.sprites=[];
 		game.rocks=[];
@@ -917,8 +954,8 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		        if(this.BACKGROUND_DEFAULT_SPEED<this.BACKGROUND_MAX_SPEED){
 		            this.BACKGROUND_DEFAULT_SPEED+=this.BACKGROUNDSPEEDINCREASE; 
 		        }
-		        if (this.MAXROCKSPAWN > this.X_LIMIT + 50) {
-		            this.MAXROCKSPAWN -= 50;
+		        if (this.MAXSPRITESPAWN > this.X_LIMIT + 200) {
+		            this.MAXSPRITESPAWN -= 50;
 		        }
 
 		        this.lvl += 1;

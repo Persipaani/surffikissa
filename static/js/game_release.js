@@ -78,7 +78,8 @@ var Game=function(){
     this.previous_x = 0,
     this.spacebar_down = false, //ettei voi hyppiä spacebar pohjassa
     this.game_over_screen = false;
-
+    this.high_score = 0;
+    
 	
 	//sound
 	this.soundCheckbox = document.getElementById('sound-checkbox');
@@ -97,7 +98,7 @@ var Game=function(){
 	this.sounds.push(this.collision_sound);
 	this.sounds.push(this.game_over_sound);
 	this.sounds.push(this.cat_sound);
-	//console.log(this.collision_sound);
+	////console.log(this.collision_sound);
 	
 	//Sprite locations:
 	
@@ -154,7 +155,7 @@ var Game=function(){
 				if(this.PossibleCollision(sprite,collidingsprite)==true){
 					if(this.Collided(sprite,collidingsprite,context)==true){
 						this.Collide(sprite,collidingsprite);
-						//console.log("collidingsprite: ", collidingsprite.type);
+						////console.log("collidingsprite: ", collidingsprite.type);
 						
 						
 					}
@@ -321,11 +322,12 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		//this.musicCheckbox.onchange();
 		if (this.musicOn) {
 			this.soundtrack.play();
-			//console.log(this.soundtrack.paused);
+			////console.log(this.soundtrack.paused);
 		}
 	},
 	
 	Initialize:function(){
+	
 		this.GenerateSprites();
 		this.SetOffSets();
 		this.background.src = "static/img/start_background.png";
@@ -552,7 +554,7 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 	},
 	
 	ResetGame:function(){
-
+		//console.log("reset");
 	    //**************** Edit these to change difficulty of game etc *******************
 	    this.BACKGROUND_DEFAULT_SPEED = 30;
 	    this.BACKGROUND_MAX_SPEED = 50;
@@ -592,13 +594,25 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
         this.breath_bar_color = "rgb(0,25,200)",
         this.lost = false,
         this.won = false,
-        this.score = 0,
+        
+        
+        
+        //this.score = 0,
         this.lvl = 0,
         this.previous_y = 55,
         this.previous_x = 0,
         this.spacebar_down = false, //ettei voi hyppiä spacebar pohjassa
         this.game_over_screen = false;
-		
+	    //console.log("high: ", game.high_score);
+    	//console.log("score: ", game.score);
+	    if (game.high_score>=game.score){
+	    	//console.log("high: ", this.high_score);
+	    	//console.log("score: ", game.score);
+	    	game.high_score=game.score;
+	    }else{
+	    	game.high_score = game.high_score;
+	    }
+	    game.score = 0;
 		//finally reset sprites:
 		game.sprites=[];
 		game.rocks=[];
@@ -615,7 +629,7 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		
 		//sounds
 		game.game_over_sound.pause();
-		//console.log("game_over_sound: ", game.game_over_sound.paused)
+		////console.log("game_over_sound: ", game.game_over_sound.paused)
 	},
 	
 	CalculateAnimation:function(time){
@@ -625,6 +639,9 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		else{
 			//There are no winners here, only loosers...
 			if(game.breath<1 && game.lost == false){
+				//if (this.score > this.high_score) this.high_score = this.score;
+				//console.log("high_Score loosing: ", game.high_score);
+				var temp_high_score = game.high_score;
 				game.game_over_screen = true;
 				game.soundtrack.pause();
 				setTimeout(function(){game.game_over_sound.currentTime = 0;game.game_over_sound.play();},1500);
@@ -635,7 +652,10 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 				setTimeout(function(){game.onmenu=true;},9010);
 				
 				setTimeout(function(){game.DrawMessage(game.score,70,240,"rgb(255,69,0)",40);},9020);
-				setTimeout(function(){game.ResetGame();console.log("reseting game call");},9030);
+				
+					
+				setTimeout(function(){game.ResetGame();},9030);
+				game.high_score = temp_high_score;
 			}
 			
 			game.fps = game.CalculateFPS(time);
@@ -665,9 +685,9 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 			}
 			if (this.soundOn){
 				for (var i = 0; i< this.sounds.length; ++i){
-					//console.log(this.sounds[i]);
+					////console.log(this.sounds[i]);
 					if(!this.sounds[i].paused){
-						//console.log(this.sounds[i])
+						////console.log(this.sounds[i])
 						this.sounds[i].pause();
 						this.playing_sounds.push(this.sounds[i]);
 					}
@@ -680,9 +700,9 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 				this.soundtrack.play();
 			}
 			if(this.soundOn){
-				//console.log("ääniä on päällä: ", this.playing_sounds.length)
+				////console.log("ääniä on päällä: ", this.playing_sounds.length)
 				for (var i = 0; i < this.playing_sounds.length;++i ){
-					//console.log("ääni pääälle: ", this.playing_sounds[i]);
+					////console.log("ääni pääälle: ", this.playing_sounds[i]);
 					this.playing_sounds[i].play();
 					this.playing_sounds.splice(i,1);
 				}
@@ -978,8 +998,13 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 	},
 
 	DrawInfo: function () {
-	    this.DrawMessage("Breath: ", 10, 30, "rgb(255,69,0)", 24)
-	    this.DrawMessage("Score: " + this.score + " | LVL: " + this.lvl, 10, 50, "rgb(255,69,0)", 24)
+	    this.DrawMessage("Breath: ", 10, 30, "rgb(255,69,0)", 24);
+	    this.DrawMessage("Score: " + this.score + " | LVL: " + this.lvl, 10, 50, "rgb(255,69,0)", 24);
+	    if(this.score>=this.high_score){
+	    	this.high_score =this.score;
+	    	//console.log("draw high:", this.high_score);
+	    }
+	    this.DrawMessage("HighScore: " + this.high_score , 500, 30, "rgb(0,0,153)", 24);
 
 	},
 	
@@ -1018,13 +1043,13 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 			colliding.visible = false;
 			this.cat_sound.currentTime = 0;
 			this.cat_sound.play();
-			//console.log("kala");
+			////console.log("kala");
 			colliding.collided=false;
 			game.player_colliding=false;
 			sprite.collided=false;
 		}	
 		else{
-			//console.log("törmäys muuhun");
+			////console.log("törmäys muuhun");
 			if(this.breath>=30){
 				this.breath-=30;
 				
@@ -1181,6 +1206,9 @@ window.onfocus=function(){
 	}
 	
 }
+
+
+
 
 //START THE GAME:
 var game=new Game();

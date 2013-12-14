@@ -57,9 +57,12 @@
             <header>
             <h1>Surffikissa</h1>
             </header>
-    <div id="debug">
+    <!-- 
+     <div id="debug">
     DEbug here
     </div>
+     -->
+   
     <!--Game Canvas:-->
     <div id="wrapper">
         <div id="game-area">
@@ -78,7 +81,7 @@
 	</div>
     <script>
 	//START THE GAME:
-	var DEBUG = document.getElementById("debug");
+	//var DEBUG = document.getElementById("debug");
 	var game=new Game();
 	game.Initialize();
 	game.soundCheckbox.onchange = function (e) {
@@ -96,6 +99,9 @@
 		  game.soundtrack.pause();
 	   }
 	};
+
+	
+
 	</script>
 
   </body>

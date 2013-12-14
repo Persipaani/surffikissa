@@ -1088,7 +1088,8 @@ window.onkeyup=function(e){
 }
 
 window.onkeydown=function(e){
-	var keycode=e.keyCode;
+    var keycode = e.keyCode;
+    e.preventDefault();
 	//pause with p;
 	if(keycode==80 && !game.game_over_screen){
 		if(game.lost==false && game.won==false && game.onmenu==false){
@@ -1113,7 +1114,6 @@ window.onkeydown=function(e){
 		//Can't move during jump!
 		//up arrow moves up:
 		if(keycode==38 && game.paused==false && game.player.y>55.0){
-			e.preventDefault();
 			if(game.player_jumping==false){
 				game.player_vert_acc=-game.CHANGE;
 			}
@@ -1122,7 +1122,6 @@ window.onkeydown=function(e){
 		}
 		//down arrow moves down:
 		if(keycode==40 && game.paused==false && game.player.y<game.Y_LIMIT){
-			e.preventDefault();
 			if(game.player_jumping==false){
 				game.player_vert_acc=game.CHANGE;
 			}

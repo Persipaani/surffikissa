@@ -330,8 +330,8 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 	
 		this.GenerateSprites();
 		this.SetOffSets();
-		this.background.src = "static/img/start_background.png";
-		this.spritesheet.src = "static/img/spritesheet1.png";
+		this.background.src = "surffikissa/static/img/start_background.png";
+		this.spritesheet.src = "surffikissa/static/img/spritesheet1.png";
 		//kun tausta on ladattu niin peli voi alkaa:
 		this.background.onload=function(e){
 		game.Run();
@@ -647,7 +647,7 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 				setTimeout(function(){game.game_over_sound.currentTime = 0;game.game_over_sound.play();},1500);
 				game.lost= true;
 				game.background_speed = 0;
-				setTimeout(function(){game.background_offset=0;game.background.src="static/img/end_background.png";}, 9000);
+				setTimeout(function(){game.background_offset=0;game.background.src="surffikissa/static/img/end_background.png";}, 9000);
 				//Nämä pitää timeouttaa hetken päähän, että background ehtii piirtyä kerran:
 				setTimeout(function(){game.onmenu=true;},9010);
 				
@@ -785,9 +785,15 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		if(this.jumpstart==0 && game.player_jumping==true){
 			this.player.y-=10;
 			this.jumpstart=time;
-			if (this.soundOn)
+			//console.log("hyppy");
+			
+			if (game.soundOn){
+				//console.log("hyppy��ni");
 				this.jump_sound.currentTime = 0;
 				this.jump_sound.play();
+				
+			}
+				
 		}
 		//Jumping on:
 		else if(time-this.jumpstart<this.JUMPTIME && game.player_jumping==true){
@@ -1059,9 +1065,11 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 			}
 			colliding.collided=true;
 			game.player_colliding=true;
-			if (game.soundOn)
+			if (game.soundOn){
 				game.collision_sound.currentTime = 0;
 				game.collision_sound.play();
+			}
+				
 			//Törmäyksen jälkeen:
 			setTimeout(function(){
 				colliding.collided=false;
@@ -1121,7 +1129,7 @@ window.onkeydown=function(e){
 		}
 		else{
 			game.onmenu=false;
-			game.background.src="static/img/sea_background.png";
+			game.background.src="surffikissa/static/img/sea_background.png";
 			if(game.lost==true){
 				game.lost=false;
 			}

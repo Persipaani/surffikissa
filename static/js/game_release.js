@@ -31,6 +31,8 @@ var Game=function(){
     this.TIMEFORDIFFICULTYINCREASE = 1000, //in ms
     this.MAXROCKS = 80, //How many rocksprites at max difficulty
     this.MAXSHARKS = 10,
+    this.MAXBOATS = 5,
+    this.MAXFISHS = 1,
 	//**************** Edit these to change difficulty of game etc *******************
 	
 	this.animation_fps=5
@@ -97,9 +99,11 @@ var Game=function(){
 	this.jump_sound		= document.getElementById('jump');
 	this.collision_sound	= document.getElementById('collision');
 	this.game_over_sound = document.getElementById('sound_game_over');
+	this.cat_sound = document.getElementById('cat');
 	this.sounds.push(this.jump_sound);
 	this.sounds.push(this.collision_sound);
 	this.sounds.push(this.game_over_sound);
+	this.sounds.push(this.cat_sound);
 	//console.log(this.collision_sound);
 	
 	//Sprite locations:
@@ -114,6 +118,14 @@ var Game=function(){
 	this.rockcells=[{x:5,y:50,width:35,height:25},{x:53,y:50,width:35,height:25},{x:101,y:50,width:35,height:25},];
 	this.sharkcells = [{x:5, y: 200, width: 100, height:100},{x:5+100, y: 200, width: 100, height:100},{x:5+200, y: 200, width: 100, height:100},
 						{x:5+300, y: 200, width: 100, height:100} ];
+	this.boatcells = [{x:0, y: 407, width: 111, height:83},
+	                  {x:111, y: 407, width: 111, height:83},
+	                  {x:2*111, y: 407, width: 111, height:83},
+	                  {x:3*111, y: 407, width: 111, height:83} ];
+	this.fishcells = [{x:0, y: 509, width: 44, height:20},
+	                  {x:44, y: 509, width: 44, height:20},
+	                  {x:2*44, y: 509, width: 44, height:20},
+	                  {x:3*44, y: 509, width: 44, height:20} ];
 	// alas == right
 	
 	this.playercells_down = [{x:0, y:305,width:50,height:45},
@@ -128,10 +140,14 @@ var Game=function(){
 	this.rockdata=[{x:1200,y:55},{x:1300,y:155},{x:1500,y:200},{x:1700,y:255},
 	{x:1750,y:400},{x:1200,y:200},{x:1900,y:300},{x:2000,y:320}];
 	
-	this.sharkdata = [{x:1300,y:250},{x:1500,y:300}]
+	this.sharkdata = [{x:1300,y:250},{x:1500,y:300}];
+	this.boatdata = [{x:500,y:300}];
+	this.fishdata = [{x:1000,y:500}];
 	
 	this.rocks=[];
 	this.sharks=[];
+	this.boats=[];
+	this.fishs=[]; //good english 
 	this.sprites=[]; //All sprites!
 	
 	//Sprite actions:
@@ -145,7 +161,11 @@ var Game=function(){
 				if(this.PossibleCollision(sprite,collidingsprite)==true){
 					if(this.Collided(sprite,collidingsprite,context)==true){
 						this.Collide(sprite,collidingsprite);
-						console.log("collidingsprite: ", collidingsprite);
+						console.log("collidingsprite: ", collidingsprite.type);
+						if (collidingsprite.type == "rock"){
+							console.log("more breath");
+							this.breath+=1000;
+						}
 						
 					}
 				}
@@ -202,8 +222,7 @@ var Game=function(){
 			if (!game.lost){
 				game.CollideEffect(sprite,colliding);
 				
-				if (game.soundOn)
-					game.collision_sound.play();
+				
 			}
 			
 		}
@@ -255,9 +274,43 @@ var Game=function(){
 				}
 			}
 		},
+	this.BoatAction={
+			previous:0,
+			Execute: function(sprite,context,time,fps){
+				if(sprite.animation_fps==0){
+					return;
+				}
+				if(this.previous==0){
+					this.previous=time;
+				}
+				else if(time-this.previous>1000/sprite.animation_fps){
+					sprite.mode.NextCell()
+					this.previous=time;
+				}
+			}
+		},
+		this.FishAction={
+				previous:0,
+				Execute: function(sprite,context,time,fps){
+					if(sprite.animation_fps==0){
+						return;
+					}
+					if(this.previous==0){
+						this.previous=time;
+					}
+					else if(time-this.previous>1000/sprite.animation_fps){
+						sprite.mode.NextCell()
+						this.previous=time;
+					}
+				}
+			},
 	
 	// shark
 	this.sharkspriter = new SpriteFromSheet(this.spritesheet, this.sharkcells);
+	// boat
+	this.boatspriter = new SpriteFromSheet(this.spritesheet, this.boatcells);
+	// fish
+	this.fishspriter = new SpriteFromSheet(this.spritesheet, this.fishcells);
 	//Create rockspriter:
 	this.rockspriter=new SpriteFromSheet(this.spritesheet,this.rockcells);
 	//Create player Sprite:
@@ -296,12 +349,18 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 	GenerateSprites:function(){
 		this.CreateRocks();
 		this.CreateSharks();
+		this.CreateBoats();
+		this.CreateFishs();
 		var sprites = [];
 		sprites.push(this.rocks);
 		sprites.push(this.sharks);
+		sprites.push(this.boats);
+		sprites.push(this.fishs);
 		var spritedata = [];
 		spritedata.push(this.rockdata);
 		spritedata.push(this.sharkdata);
+		spritedata.push(this.boatdata);
+		spritedata.push(this.fishdata);
 		this.PositionSprites(sprites,spritedata);
 	},
 	
@@ -326,6 +385,36 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 			shark.animation_fps=this.animation_fps;
 			this.sharks.push(shark);
 			this.sprites.splice(this.sprites.length-1,0,shark);
+		}
+		
+	},
+	CreateBoats:function(){
+		var boat;
+		for (var n=0; n<=this.boatdata.length;++n){
+			boat=new Sprite("boat",this.boatspriter,[this.BoatAction]);
+			boat.collided=false;
+			boat.width=105;
+			boat.height=55;
+			boat.x=0;
+			boat.y=0;
+			boat.animation_fps=this.animation_fps;
+			this.boats.push(boat);
+			this.sprites.splice(this.sprites.length-1,0,boat);
+		}
+		
+	},
+	CreateFishs:function(){
+		var fish;
+		for (var n=0; n<=this.fishdata.length;++n){
+			fish=new Sprite("fish",this.fishspriter,[this.FishAction]);
+			fish.collided=false;
+			fish.width=44;
+			fish.height=20;
+			fish.x=0;
+			fish.y=0;
+			fish.animation_fps=this.animation_fps;
+			this.fishs.push(fish);
+			this.sprites.splice(this.sprites.length-1,0,fish);
 		}
 		
 	},
@@ -371,6 +460,30 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 	    shark.animation_fps = this.animation_fps;
 	    this.sharks.push(shark);
 	    this.sprites.splice(this.sprites.length-1, 0, shark);
+	},
+	CreateOneBoat: function () {
+	    //Creates a new boat sprite in random location outside game area:
+	    boat = new Sprite("boat", this.boatspriter, [this.BoatAction]);
+	    boat.collided = false;
+	    boat.width = 105;
+	    boat.height = 55;
+	    boat.x = Math.floor((Math.random() * this.MAXSPRITESPAWN) + this.X_LIMIT + 50);;
+	    boat.y = Math.floor((Math.random() * (this.Y_LIMIT - 55)) + 55);;
+	    boat.animation_fps = this.animation_fps;
+	    this.boats.push(boat);
+	    this.sprites.splice(this.sprites.length-1, 0, boat);
+	},
+	CreateOneFish: function () {
+	    //Creates a new fish sprite in random location outside game area:
+	    fish = new Sprite("fish", this.fishspriter, [this.FishAction]);
+	    fish.collided = false;
+	    fish.width = 44;
+	    fish.height = 20;
+	    fish.x = Math.floor((Math.random() * this.MAXSPRITESPAWN) + this.X_LIMIT + 50);;
+	    fish.y = Math.floor((Math.random() * (this.Y_LIMIT - 55)) + 55);;
+	    fish.animation_fps = this.animation_fps;
+	    this.fishs.push(fish);
+	    this.sprites.splice(this.sprites.length-1, 0, fish);
 	},
 	
 	CalculateBackground:function(){
@@ -483,6 +596,8 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		game.sprites=[];
 		game.rocks=[];
 		game.sharks = [];
+		game.boats = [];
+		game.fishs = [];
 		game.playerspriter=new SpriteFromSheet(game.spritesheet,game.playercells_right);
 		game.player=new Sprite("player",this.playerspriter,[this.CollisionAction,this.MoveAction]);
 		game.player.y=game.START_LOC_Y;
@@ -503,12 +618,12 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 				setTimeout(function(){if(!game.paused)game.game_over_sound.play();},1500);
 				game.lost= true;
 				game.background_speed = 0;
-				setTimeout(function(){game.background_offset=0;game.background.src="static/img/end_background.png";}, 8000);
+				setTimeout(function(){game.background_offset=0;game.background.src="static/img/end_background.png";}, 9000);
 				//Nämä pitää timeouttaa hetken päähän, että background ehtii piirtyä kerran:
-				setTimeout(function(){game.onmenu=true;},8010);
+				setTimeout(function(){game.onmenu=true;},9010);
 				
-				setTimeout(function(){console.log(game.score);game.DrawMessage(game.score,70,240,"rgb(255,69,0)",40);},8020);
-				setTimeout(function(){game.ResetGame();},8030);
+				setTimeout(function(){console.log(game.score);game.DrawMessage(game.score,70,240,"rgb(255,69,0)",40);},9020);
+				setTimeout(function(){game.ResetGame();},9030);
 			}
 			
 			game.fps = game.CalculateFPS(time);
@@ -777,6 +892,12 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		        if (this.lvl % 5 == 0 && this.sharks.length < this.MAXSHARKS) {
 		            this.CreateOneShark();
 		        }
+		        if (this.lvl % 8 == 0 && this.boats.length < this.MAXBOATS) {
+		            this.CreateOneBoat();
+		        }
+		        if (this.lvl % 12 == 0 && this.fishs.length < this.MAXFISHS) {
+		            this.CreateOneFish();
+		        }
 
 		        if(this.BACKGROUND_MAX_SPEED<100){
 		            this.BACKGROUND_MAX_SPEED+=this.BACKGROUNDSPEEDINCREASE;
@@ -881,23 +1002,40 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 //SPRITES:
 	CollideEffect:function(sprite,colliding,silent){
 		sprite.collided=true;
-		if(this.breath>=30){
-			this.breath-=30;
-		}
-		else{
-			this.breath=0;
-		}
-		colliding.collided=true;
-		game.player_colliding=true;
-		
-		//Törmäyksen jälkeen:
-		setTimeout(function(){
+		if(colliding.type =="fish"){
+			this.breath =400;
+			colliding.visible = false;
+			this.cat_sound.play();
+			console.log("kala");
 			colliding.collided=false;
 			game.player_colliding=false;
 			sprite.collided=false;
-			sprite.visible=true;
-			sprite.mode.cell_index=0;
-			},game.COLLISION_DURATION);
+		}	
+		else{
+			console.log("törmäys muuhun");
+			if(this.breath>=30){
+				this.breath-=30;
+				
+			}else{
+				this.breath=0;
+				
+			}
+			colliding.collided=true;
+			game.player_colliding=true;
+			if (game.soundOn)
+				game.collision_sound.play();
+			//Törmäyksen jälkeen:
+			setTimeout(function(){
+				colliding.collided=false;
+				game.player_colliding=false;
+				sprite.collided=false;
+				sprite.visible=true;
+				sprite.mode.cell_index=0;
+				},game.COLLISION_DURATION);
+		}
+		
+		
+		
 	},
 	
 	DrawSprites:function(){
@@ -958,7 +1096,7 @@ window.onkeydown=function(e){
 		game.TogglePause();
 	}
 	// ei voi liikkua törmäyksen aikana tai  kun on kuollut
-	if (!game.player_colliding && game.breath > 0){
+	if (!game.player_colliding && game.breath > 0 && !game.lost){
 		//Can't move during jump!
 		//up arrow moves up:
 		if(keycode==38 && game.paused==false && game.player.y>55.0){

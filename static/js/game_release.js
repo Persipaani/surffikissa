@@ -85,6 +85,7 @@ var Game=function(){
     this.previous_shark_y = 0,
     this.previous_shark_y = 0,
     this.spacebar_down = false, //ettei voi hyppiä spacebar pohjassa
+    this.game_over_screen = false;
 
 	
 	//sound
@@ -161,11 +162,8 @@ var Game=function(){
 				if(this.PossibleCollision(sprite,collidingsprite)==true){
 					if(this.Collided(sprite,collidingsprite,context)==true){
 						this.Collide(sprite,collidingsprite);
-						console.log("collidingsprite: ", collidingsprite.type);
-						if (collidingsprite.type == "rock"){
-							console.log("more breath");
-							this.breath+=1000;
-						}
+						//console.log("collidingsprite: ", collidingsprite.type);
+						
 						
 					}
 				}
@@ -562,6 +560,8 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 	},
 	
 	ResetGame:function(){
+		console.log("reseting game");
+		
 		game.background_speed=30,
 		game.sprite_speed=game.background_speed*2.32, //4.32 originaali
 		game.player_acc=0.0,
@@ -591,7 +591,9 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		game.lost=false;
 		game.won=false;
 		game.onmenu=true;
-		
+		game.score =0;
+		game.scoretimer = 0;
+		game.game_over_screen = false;
 		//finally reset sprites:
 		game.sprites=[];
 		game.rocks=[];
@@ -605,6 +607,10 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		game.sprites.push(game.player);
 		game.GenerateSprites();
 		game.SetOffSets();
+		
+		//sounds
+		game.game_over_sound.pause();
+		console.log("game_over_sound: ", game.game_over_sound.paused)
 	},
 	
 	CalculateAnimation:function(time){
@@ -613,17 +619,18 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		}
 		else{
 			//There are no winners here, only loosers...
-			if(game.breath<1 && game.lost == false && !game.paused){
+			if(game.breath<1 && game.lost == false){
+				game.game_over_screen = true;
 				game.soundtrack.pause();
-				setTimeout(function(){if(!game.paused)game.game_over_sound.play();},1500);
+				setTimeout(function(){game.game_over_sound.play();},1500);
 				game.lost= true;
 				game.background_speed = 0;
 				setTimeout(function(){game.background_offset=0;game.background.src="static/img/end_background.png";}, 9000);
 				//Nämä pitää timeouttaa hetken päähän, että background ehtii piirtyä kerran:
 				setTimeout(function(){game.onmenu=true;},9010);
 				
-				setTimeout(function(){console.log(game.score);game.DrawMessage(game.score,70,240,"rgb(255,69,0)",40);},9020);
-				setTimeout(function(){game.ResetGame();},9030);
+				setTimeout(function(){game.DrawMessage(game.score,70,240,"rgb(255,69,0)",40);},9020);
+				setTimeout(function(){game.ResetGame();console.log("reseting game call");},9030);
 			}
 			
 			game.fps = game.CalculateFPS(time);
@@ -655,7 +662,7 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 				for (var i = 0; i< this.sounds.length; ++i){
 					//console.log(this.sounds[i]);
 					if(!this.sounds[i].paused){
-						console.log(this.sounds[i])
+						//console.log(this.sounds[i])
 						this.sounds[i].pause();
 						this.playing_sounds.push(this.sounds[i]);
 					}
@@ -668,9 +675,9 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 				this.soundtrack.play();
 			}
 			if(this.soundOn){
-				console.log("ääniä on päällä: ", this.playing_sounds.length)
+				//console.log("ääniä on päällä: ", this.playing_sounds.length)
 				for (var i = 0; i < this.playing_sounds.length;++i ){
-					console.log("ääni pääälle: ", this.playing_sounds[i]);
+					//console.log("ääni pääälle: ", this.playing_sounds[i]);
 					this.playing_sounds[i].play();
 					this.playing_sounds.splice(i,1);
 				}
@@ -1006,13 +1013,13 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 			this.breath =400;
 			colliding.visible = false;
 			this.cat_sound.play();
-			console.log("kala");
+			//console.log("kala");
 			colliding.collided=false;
 			game.player_colliding=false;
 			sprite.collided=false;
 		}	
 		else{
-			console.log("törmäys muuhun");
+			//console.log("törmäys muuhun");
 			if(this.breath>=30){
 				this.breath-=30;
 				
@@ -1077,7 +1084,7 @@ window.onkeyup=function(e){
 window.onkeydown=function(e){
 	var keycode=e.keyCode;
 	//pause with p;
-	if(keycode==80){
+	if(keycode==80 && !game.game_over_screen){
 		if(game.lost==false && game.won==false && game.onmenu==false){
 			game.DrawMessage("PAUSED, PRESS P TO CONTINUE!",180,220,"rgb(250,0,0)",24);
 		}
@@ -1144,19 +1151,25 @@ window.onkeydown=function(e){
 
 //WINDOW FOCUS HANDLING:
 window.onblur=function(){
-	game.window_active=false;
-	if(game.paused==false){
-		game.DrawMessage("LOST FOCUS, CLICK HERE TO CONTINUE!",150,220,"rgb(250,0,0)",24);
-		this.keypaused=false;
-		game.TogglePause();
+	if(!game.game_over_screen){
+		game.window_active=false;
+		if(game.paused==false){
+			game.DrawMessage("LOST FOCUS, CLICK HERE TO CONTINUE!",150,220,"rgb(250,0,0)",24);
+			this.keypaused=false;
+			game.TogglePause();
+		}
 	}
+	
 }
 
 window.onfocus=function(){
-	game.window_active=true;
-	if(this.keypaused==false){
-		game.TogglePause();
+	if(!game.game_over_screen){
+		game.window_active=true;
+		if(this.keypaused==false){
+			game.TogglePause();
+		}
 	}
+	
 }
 
 //START THE GAME:

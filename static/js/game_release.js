@@ -552,7 +552,6 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 	},
 	
 	ResetGame:function(){
-	    console.log("reseting game");
 
 	    //**************** Edit these to change difficulty of game etc *******************
 	    this.BACKGROUND_DEFAULT_SPEED = 30;
@@ -600,38 +599,6 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
         this.spacebar_down = false, //ettei voi hyppiä spacebar pohjassa
         this.game_over_screen = false;
 		
-        /*
-		game.background_speed=30,
-		game.sprite_speed=game.background_speed*2.32, //4.32 originaali
-		game.player_acc=0.0,
-		game.player_vert_acc=0.0,
-		
-		//offsets:
-		game.background_offset=0,
-		
-		//timing:
-		game.jumpstart=0;	//Jumping started at game time
-		game.prev_time=0,	//for FPS
-		game.prev_update=0, //for FPS
-		game.fps=20,
-		
-		//other
-		game.player_jumping=false,
-		game.player_down = false,
-		game.player_up = false,
-		game.player_colliding=false,
-		game.right_up=true, //for keys
-		game.left_up=true,	//for keys
-		game.up_up=true,	//for keys
-		game.down_up=true,	//for keys
-		game.breath=game.STARTING_BREATH,
-		game.lost=false;
-		game.won=false;
-		game.onmenu=true;
-		game.score = 0;
-		game.scoretimer = 0;
-		game.game_over_screen = false;
-        */
 		//finally reset sprites:
 		game.sprites=[];
 		game.rocks=[];
@@ -788,8 +755,6 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 
 	    this.previous_y = sprite.y;
 	    this.previous_x = sprite.x;
-
-	    DEBUG.innerHTML = "sprite_Y: " + sprite.y + "sprite_X:" + sprite.x;
 
 		//finally reset offset:
 		sprite.offset=0;

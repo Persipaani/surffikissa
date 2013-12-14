@@ -82,7 +82,7 @@ var Game=function(){
     this.previous_x = 0,
     this.previous_shark_y = 0,
     this.previous_shark_y = 0,
-
+    this.spacebar_down = false, //ettei voi hyppiä spacebar pohjassa
 
 	
 	//sound
@@ -91,11 +91,16 @@ var Game=function(){
 	this.musicCheckbox = document.getElementById('music-checkbox');
 	this.soundOn = this.soundCheckbox.checked;
 	this.musicOn = this.musicCheckbox.checked;
-	
+	this.sounds = [];
+	this.playing_sounds = [];
 	this.soundtrack          = document.getElementById('soundtrack');
 	this.jump_sound		= document.getElementById('jump');
 	this.collision_sound	= document.getElementById('collision');
-	console.log(this.collision_sound);
+	this.game_over_sound = document.getElementById('sound_game_over');
+	this.sounds.push(this.jump_sound);
+	this.sounds.push(this.collision_sound);
+	this.sounds.push(this.game_over_sound);
+	//console.log(this.collision_sound);
 	
 	//Sprite locations:
 	
@@ -105,17 +110,20 @@ var Game=function(){
 	this.playercells_still=[{x:0,y:83,width:50,height:35},{x:54,y:83,width:45,height:35},{x:107,y:83,width:48,height:35}],
 	this.playercells_jumping=[{x:0,y:120,width:45,height:45},{x:57,y:120,width:45,height:45},{x:109,y:120,width:45,height:45}],
 	this.playercells_colliding=[{x:6,y:168,width:45,height:35},{x:62,y:168,width:45,height:35},{x:168,y:120,width:45,height:35}],
+	this.playercells_died=[{x:150,y:5,width:50,height:45},{x:200,y:5,width:45,height:43},{x:257,y:5,width:48,height:43}],
 	this.rockcells=[{x:5,y:50,width:35,height:25},{x:53,y:50,width:35,height:25},{x:101,y:50,width:35,height:25},];
 	this.sharkcells = [{x:5, y: 200, width: 100, height:100},{x:5+100, y: 200, width: 100, height:100},{x:5+200, y: 200, width: 100, height:100},
 						{x:5+300, y: 200, width: 100, height:100} ];
 	// alas == right
 	
-	this.playercells_down = [{x:50, y:310,width:50,height:45},
-	                         {x:100, y:310,width:50,height:45},
-								{x:150, y:310,width:50,height:45}
+	this.playercells_down = [{x:0, y:305,width:50,height:45},
+	                         {x:56, y:305,width:50,height:45},
+								{x:2*56, y:305,width:50,height:45}
 								];
-	this.playercells_up = [{x:50, y:350,width:50,height:45},{x:100, y:350,width:50,height:45},
-							{x:150, y:350,width:50,height:45}];
+	this.playercells_up = [{x:0, y:359,width:50,height:45},
+	                         {x:56, y:359,width:50,height:45},
+								{x:112, y:359,width:50,height:45}
+								];
 	//Tämä on sijaintidataa pelikentällä:
 	this.rockdata=[{x:1200,y:55},{x:1300,y:155},{x:1500,y:200},{x:1700,y:255},
 	{x:1750,y:400},{x:1200,y:200},{x:1900,y:300},{x:2000,y:320}];
@@ -133,9 +141,11 @@ var Game=function(){
 			var collidingsprite;
 			for(var n=0; n<game.sprites.length; ++n){
 				collidingsprite=game.sprites[n];
+				
 				if(this.PossibleCollision(sprite,collidingsprite)==true){
 					if(this.Collided(sprite,collidingsprite,context)==true){
 						this.Collide(sprite,collidingsprite);
+						console.log("collidingsprite: ", collidingsprite);
 						
 					}
 				}
@@ -150,6 +160,7 @@ var Game=function(){
 					//Tarkistuksen tehostamiseksi käydään läpi vain objektit pelaajan kohdalla:
 					var colliding_loc=colliding.x-colliding.offset
 					if(colliding_loc<sprite.x+sprite.width && colliding_loc>sprite.x-sprite.width){
+						
 						return true;
 					}
 				}
@@ -188,9 +199,13 @@ var Game=function(){
 		Collide:function(sprite,colliding){
 			//piilotetaan vihollinen:
 			//tehdaan pelaajalle vaadittava efekti:
-			game.CollideEffect(sprite,colliding);
-			if (game.soundOn)
-				game.collision_sound.play();
+			if (!game.lost){
+				game.CollideEffect(sprite,colliding);
+				
+				if (game.soundOn)
+					game.collision_sound.play();
+			}
+			
 		}
 	},
 	
@@ -263,6 +278,7 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		//this.musicCheckbox.onchange();
 		if (this.musicOn) {
 			this.soundtrack.play();
+			console.log(this.soundtrack.paused);
 		}
 	},
 	
@@ -358,40 +374,44 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 	},
 	
 	CalculateBackground:function(){
-		//Calculate how much and what direction background moves:
-		
-		//if player is in the middle try to reset to default speed:
-		if(this.player.x<=500 && this.player.x>=200){
-			if(this.background_speed>this.BACKGROUND_DEFAULT_SPEED){
-				this.background_speed-=this.BACKGROUND_ACC;	
+		if(this.breath>=0 && this.lost == false){
+			//Calculate how much and what direction background moves:
+			
+			//if player is in the middle try to reset to default speed:
+			if(this.player.x<=500 && this.player.x>=200){
+				if(this.background_speed>this.BACKGROUND_DEFAULT_SPEED){
+					this.background_speed-=this.BACKGROUND_ACC;	
+				}
+				if(this.background_speed<this.BACKGROUND_DEFAULT_SPEED){
+					this.background_speed+=this.BACKGROUND_ACC;	
+				}
 			}
-			if(this.background_speed<this.BACKGROUND_DEFAULT_SPEED){
-				this.background_speed+=this.BACKGROUND_ACC;	
+			
+			//if player is on the lead the background tries to catch up until it reaches max
+			if(this.player.x>500 && this.background_speed<this.BACKGROUND_MAX_SPEED){
+				this.background_speed+=this.BACKGROUND_ACC;
 			}
+			
+			//if player is behind background slows down until it moves as little as possible
+			if(this.player.x<200 && this.background_speed>this.BACKGROUND_MIN_SPEED){
+				this.background_speed-=this.BACKGROUND_ACC;
+			}
+			
+			//Finally let's update the speed of sprites to match background:
+			this.sprite_speed=this.background_speed*2.32
+			
+			//DEBUG.innerHTML="back_speed:"+this.background_speed + "sprites" + this.sprites.length + "lvl:" + this.lvl + "points: " + this.score;
+			var sum=this.background_offset+this.background_speed/this.fps;
+			
+			if(sum>0 && sum<this.background.width){
+				this.background_offset=sum;
+			}
+			else{
+				this.background_offset=0;
+			}
+			
 		}
 		
-		//if player is on the lead the background tries to catch up until it reaches max
-		if(this.player.x>500 && this.background_speed<this.BACKGROUND_MAX_SPEED){
-			this.background_speed+=this.BACKGROUND_ACC;
-		}
-		
-		//if player is behind background slows down until it moves as little as possible
-		if(this.player.x<200 && this.background_speed>this.BACKGROUND_MIN_SPEED){
-			this.background_speed-=this.BACKGROUND_ACC;
-		}
-		
-		//Finally let's update the speed of sprites to match background:
-		this.sprite_speed=this.background_speed*2.32
-		
-		//DEBUG.innerHTML="back_speed:"+this.background_speed + "sprites" + this.sprites.length + "lvl:" + this.lvl + "points: " + this.score;
-		var sum=this.background_offset+this.background_speed/this.fps;
-		
-		if(sum>0 && sum<this.background.width){
-			this.background_offset=sum;
-		}
-		else{
-			this.background_offset=0;
-		}
 	},
 	
 	SetOffSets:function(){
@@ -477,14 +497,18 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 			setTimeout(function(){requestNextAnimationFrame(game.CalculateAnimation);},game.pausetimer);
 		}
 		else{
-			//There are no winners here, only losers...
-			if(game.breath<=0){
-				game.lost=!game.lost;
-				game.background.src="static/img/end_background.png";
+			//There are no winners here, only loosers...
+			if(game.breath<1 && game.lost == false && !game.paused){
+				game.soundtrack.pause();
+				setTimeout(function(){if(!game.paused)game.game_over_sound.play();},1500);
+				game.lost= true;
+				game.background_speed = 0;
+				setTimeout(function(){game.background_offset=0;game.background.src="static/img/end_background.png";}, 8000);
 				//Nämä pitää timeouttaa hetken päähän, että background ehtii piirtyä kerran:
-				setTimeout(function(){game.onmenu=true;},10);
-				setTimeout(function(){game.DrawMessage(game.score,70,240,"rgb(255,69,0)",40);},20);
-				setTimeout(function(){game.ResetGame();},30);
+				setTimeout(function(){game.onmenu=true;},8010);
+				
+				setTimeout(function(){console.log(game.score);game.DrawMessage(game.score,70,240,"rgb(255,69,0)",40);},8020);
+				setTimeout(function(){game.ResetGame();},8030);
 			}
 			
 			game.fps = game.CalculateFPS(time);
@@ -498,6 +522,8 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 				this.soundtrack.pause();
 				game.paused=true;
 				game.keypaused=true;
+				game.game_over_sound.pause();
+				
 			}
 		}
 	},
@@ -508,13 +534,36 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		if(this.paused==true){
 			this.pause_start=time_now;
 			if (this.musicOn){
-				this.soundtrack.pause();
+				this.soundtrack.pause();	
+			}
+			if (this.soundOn){
+				for (var i = 0; i< this.sounds.length; ++i){
+					//console.log(this.sounds[i]);
+					if(!this.sounds[i].paused){
+						console.log(this.sounds[i])
+						this.sounds[i].pause();
+						this.playing_sounds.push(this.sounds[i]);
+					}
+				}
 			}
 		}
 		else{
 			this.prev_time+=(time_now-this.pause_start);
 			if(this.musicOn){
 				this.soundtrack.play();
+			}
+			if(this.soundOn){
+				console.log("ääniä on päällä: ", this.playing_sounds.length)
+				for (var i = 0; i < this.playing_sounds.length;++i ){
+					console.log("ääni pääälle: ", this.playing_sounds[i]);
+					this.playing_sounds[i].play();
+					this.playing_sounds.splice(i,1);
+				}
+				if(this.game_over_sound.paused && this.lost){
+					this.game_over_sound.play();
+					this.soundtrack.pause();
+				}
+				
 			}
 		}
 	},
@@ -634,18 +683,22 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		this.player.x=this.player.x+this.player_acc;
 		
 		//Animoidaan eri tavalla liikkeessä:
+	
 		
 		if(game.player_jumping==true){
 			this.playerspriter.cells=this.playercells_jumping;
-		}else if(game.player_down){
+		}else if(game.player_down && game.player_colliding!=true){
 			this.playerspriter.cells=this.playercells_down;
-		}else if(game.player_up){
+		}else if(game.player_up && game.player_colliding!=true){
 			this.playerspriter.cells=this.playercells_up;
 		}
 		else if(game.player_colliding==true){
 			this.playerspriter.cells=this.playercells_colliding;	
 		}
-		else if(game.player_colliding!=true){
+		else if(game.lost && !game.player_colliding){
+			this.playerspriter.cells=this.playercells_died;
+		}
+		else if(game.player_colliding!=true ){
 			if(this.player_acc!=0.0 || this.player_vert_acc!=0.0){
 				this.playerspriter.cells=this.playercells_right;
 			}
@@ -670,7 +723,7 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 		
 
 		//Henkeä tulee hitaasti lisää 40 asti
-		else if(this.breath<40.0){
+		else if(this.breath<40.0 && this.breath > 0){
 			this.breath+=0.05;
 		}
 		if(this.breath>40.0){
@@ -709,51 +762,59 @@ Game.prototype={ //prototype tarkoittaa js:ssä periytymistä, lol
 	},
 	
 	CalculateDifficulty: function (time) {
-	    //Start:
-	    if (this.difficultytimer==0){
-	        this.difficultytimer = time;
-	    }
+		if(this.breath>=0 && this.lost == false){
+			//Start:
+		    if (this.difficultytimer==0){
+		        this.difficultytimer = time;
+		    }
 
-	    else if (time - this.difficultytimer > this.TIMEFORDIFFICULTYINCREASE) {
+		    else if (time - this.difficultytimer > this.TIMEFORDIFFICULTYINCREASE) {
 
-	        if (this.sprites.length < this.MAXROCKS+1) {
-	            this.CreateOneRock();
-	        }
+		        if (this.sprites.length < this.MAXROCKS+1) {
+		            this.CreateOneRock();
+		        }
 
-	        if (this.lvl % 5 == 0 && this.sharks.length < this.MAXSHARKS) {
-	            this.CreateOneShark();
-	        }
+		        if (this.lvl % 5 == 0 && this.sharks.length < this.MAXSHARKS) {
+		            this.CreateOneShark();
+		        }
 
-	        if(this.BACKGROUND_MAX_SPEED<100){
-	            this.BACKGROUND_MAX_SPEED+=this.BACKGROUNDSPEEDINCREASE;
-	        }
-	        
-	        if(this.BACKGROUND_MIN_SPEED<this.BACKGROUND_MAX_SPEED){
-	            this.BACKGROUND_MIN_SPEED+=this.BACKGROUNDSPEEDINCREASE; 
-	        }
+		        if(this.BACKGROUND_MAX_SPEED<100){
+		            this.BACKGROUND_MAX_SPEED+=this.BACKGROUNDSPEEDINCREASE;
+		        }
+		        
+		        if(this.BACKGROUND_MIN_SPEED<this.BACKGROUND_MAX_SPEED){
+		            this.BACKGROUND_MIN_SPEED+=this.BACKGROUNDSPEEDINCREASE; 
+		        }
 
-	        if(this.BACKGROUND_DEFAULT_SPEED<this.BACKGROUND_MAX_SPEED){
-	            this.BACKGROUND_DEFAULT_SPEED+=this.BACKGROUNDSPEEDINCREASE; 
-	        }
-	        if (this.MAXROCKSPAWN > this.X_LIMIT + 50) {
-	            this.MAXROCKSPAWN -= 50;
-	        }
+		        if(this.BACKGROUND_DEFAULT_SPEED<this.BACKGROUND_MAX_SPEED){
+		            this.BACKGROUND_DEFAULT_SPEED+=this.BACKGROUNDSPEEDINCREASE; 
+		        }
+		        if (this.MAXROCKSPAWN > this.X_LIMIT + 50) {
+		            this.MAXROCKSPAWN -= 50;
+		        }
 
-	        this.lvl += 1;
-            this.difficultytimer = 0;
-	    }
+		        this.lvl += 1;
+	            this.difficultytimer = 0;
+		    }
+			
+		}
+	    
 
 	},
 
 	CalculateScore: function (time) {
-	    if (this.scoretimer == 0 || this.scoretimer==undefined) {
-	        this.scoretimer = time;
-	    }
-            //pisteet 1s välein
-	    else if (time-this.scoretimer > 1000) {
-	        this.score += Math.floor(this.background_speed + this.sprites.length + this.player.x);
-	        this.scoretimer = 0;
-	    }
+		if (this.breath>0 && this.lost ==false){
+			if (this.scoretimer == 0 || this.scoretimer==undefined) {
+		        this.scoretimer = time;
+		    }
+	            //pisteet 1s välein
+		    else if (time-this.scoretimer > 1000) {
+		        this.score += Math.floor(this.background_speed + this.sprites.length + this.player.x);
+		        this.scoretimer = 0;
+		    }
+			
+		}
+	    
 
 	},
 	
@@ -872,7 +933,7 @@ window.onkeyup=function(e){
 		game.down_up=true;
 		game.player_down = false;
 	}
-	
+	if(keycode==32) game.spacebar_down = false;
 }
 
 window.onkeydown=function(e){
@@ -896,7 +957,9 @@ window.onkeydown=function(e){
 		this.keypaused=!this.keypaused;
 		game.TogglePause();
 	}
-	//Can't move during jump!
+	// ei voi liikkua törmäyksen aikana tai  kun on kuollut
+	if (!game.player_colliding && game.breath > 0){
+		//Can't move during jump!
 		//up arrow moves up:
 		if(keycode==38 && game.paused==false && game.player.y>55.0){
 			e.preventDefault();
@@ -930,8 +993,13 @@ window.onkeydown=function(e){
 			game.left_up=false;
 		}
 		if(keycode==32 && game.player_jumping==false && game.player_colliding==false){
-			game.player_jumping=true;
+			if (!game.spacebar_down)
+				game.player_jumping=true;
+			game.spacebar_down = true;
 		}
+		
+	}
+		
 	}
 
 

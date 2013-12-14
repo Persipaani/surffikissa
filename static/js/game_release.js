@@ -29,7 +29,6 @@ var Game=function(){
     this.MAXSHARKS = 10,
     this.MAXBOATS = 5,
     this.MAXFISHS = 1,
-    this.COLLISIONBOXDECREASE=0, //How much sprite collision area will be decreased (increased value makes bb smaller)
 	//**************** Edit these to change difficulty of game etc *******************
 	
 	this.animation_fps=5
@@ -180,11 +179,11 @@ var Game=function(){
 		Collided:function(sprite,colliding,context){
 			//Määritellään boundingboksin rajat(boski pienennetty 5pikseliä reunoista):
 			//Tässä pelissä vain player törmää, joten arvot sieltä:
-		    var left_edge = sprite.x + game.COLLISIONBOXDECREASE;
-		    right_edge = sprite.x + sprite.width - game.COLLISIONBOXDECREASE;
-		    top_edge = sprite.y + game.COLLISIONBOXDECREASE;
-		    bottom_edge = sprite.y + sprite.height - game.COLLISIONBOXDECREASE;
-		    midX = left_edge + sprite.width / 2;
+			var left_edge=sprite.x+5,
+			right_edge=sprite.x+sprite.width-5,
+			top_edge=sprite.y+5,
+			bottom_edge=sprite.y+sprite.height-5,
+			midX=left_edge+sprite.width/2,
 			midY=top_edge+sprite.heigth/2;
 			return this.PlayerCollided(left_edge,top_edge,right_edge,bottom_edge,midX,midY,colliding,context);
 		},

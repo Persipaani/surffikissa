@@ -1150,12 +1150,9 @@ window.onkeydown=function(e){
 		}
 		
 	}
-	else if (keycode == 38) {
+	else if (keycode == 38 || keycode == 40 || keycode == 32) {
 	    e.preventDefault();
 	}
-	else if (keycode == 40) {
-	    e.preventDefault();
-    }
 	
 	}
 
